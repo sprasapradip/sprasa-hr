@@ -80,6 +80,10 @@ export const router = createBrowserRouter([
     element: <PublicLayout />,
     children: [
       { path: '/', element: page(() => import('@/pages/public/HomePage')) },
+      { path: '/features', element: page(() => import('@/pages/public/FeaturesPage')) },
+      { path: '/how-it-works', element: page(() => import('@/pages/public/HowItWorksPage')) },
+      { path: '/security', element: page(() => import('@/pages/public/SecurityPage')) },
+      { path: '/faq', element: page(() => import('@/pages/public/FaqPage')) },
       { path: '/consultancy', element: page(() => import('@/pages/public/ConsultancyPage')) },
       { path: '/contact', element: page(() => import('@/pages/public/ContactPage')) },
     ],

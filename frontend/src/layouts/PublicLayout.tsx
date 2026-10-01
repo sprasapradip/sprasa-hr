@@ -6,9 +6,10 @@ import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 const links = [
-  { to: '/#features', label: 'Features' },
-  { to: '/#how-it-works', label: 'How it works' },
-  { to: '/#faq', label: 'FAQ' },
+  { to: '/features', label: 'Features' },
+  { to: '/how-it-works', label: 'How it works' },
+  { to: '/security', label: 'Security' },
+  { to: '/faq', label: 'FAQ' },
   { to: '/contact', label: 'Contact' },
 ];
 
@@ -30,9 +31,9 @@ export function PublicLayout() {
           </Link>
           <nav className="hidden items-center gap-6 md:flex" aria-label="Main">
             {links.map((l) => (
-              <a key={l.to} href={l.to} className="text-sm text-muted hover:text-fg">
+              <NavLink key={l.to} to={l.to} className={({ isActive }) => cn('text-sm text-muted hover:text-fg', isActive && 'font-medium text-fg')}>
                 {l.label}
-              </a>
+              </NavLink>
             ))}
           </nav>
           <div className="ml-auto hidden items-center gap-2 md:flex">
@@ -52,9 +53,13 @@ export function PublicLayout() {
             <ul className="space-y-1">
               {links.map((l) => (
                 <li key={l.to}>
-                  <a href={l.to} onClick={() => setOpen(false)} className="block rounded-md px-2 py-2 text-sm text-fg hover:bg-surface-2">
+                  <NavLink
+                    to={l.to}
+                    onClick={() => setOpen(false)}
+                    className={({ isActive }) => cn('block rounded-md px-2 py-2 text-sm text-fg hover:bg-surface-2', isActive && 'bg-surface-2 font-medium')}
+                  >
                     {l.label}
-                  </a>
+                  </NavLink>
                 </li>
               ))}
             </ul>
@@ -95,6 +100,10 @@ export function PublicLayout() {
             <p className="font-medium text-fg">Pages</p>
             <ul className="mt-2 space-y-1">
               {[
+                ['/features', 'Features'],
+                ['/how-it-works', 'How it works'],
+                ['/security', 'Security'],
+                ['/faq', 'FAQ'],
                 ['/consultancy', 'Request a consultation'],
                 ['/contact', 'Contact'],
                 ['/login', 'Sign in'],
