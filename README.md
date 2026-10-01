@@ -259,9 +259,3 @@ Found a security problem? Please email Sprasa Technical Solution rather than ope
 **Payroll shows no tax.** No active tax slab covers the payroll month for that employee's category. Check Payroll → Tax configuration and the slabs' effective dates.
 
 **An employee is missing from payroll.** They need a salary whose effective dates overlap the month, and a join date on or before the end of it.
-
----
-
-© Sprasa Technical Solution · +977 9843944252 / 53
-#   s p r a s a - h r 
- 
