@@ -1,0 +1,66 @@
+# Local stack: PostgreSQL, API and the built frontend behind Nginx.
+#   cp .env.example .env   (then set real secrets)
+#   docker compose up --build
+#   docker compose exec backend npx prisma db seed   (optional demo data)
+# Open http://localhost:8080
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sprasa_hr}
+      POSTGRES_USER: ${POSTGRES_USER:-sprasa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-sprasa} -d ${POSTGRES_DB:-sprasa_hr}']
+      interval: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sprasa}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sprasa_hr}?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-Sprasa HR <no-reply@localhost>}
+      UPLOAD_DIR: /app/uploads
+      BACKUP_DIR: /app/backups
+      PG_DUMP_PATH: pg_dump
+    volumes:
+      - uploads:/app/uploads
+      - backups:/app/backups
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - '8080:80'
+
+  # Optional: add Redis later for shared rate limiting across several API instances.
+  # redis:
+  #   image: redis:7-alpine
+
+volumes:
+  pgdata:
+  uploads:
+  backups:
