@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { attendanceRoutes } from '../modules/attendance/attendance.routes';
+import { agentRoutes } from '../modules/attendance/device-gateway.routes';
+import { deviceRoutes, punchRoutes } from '../modules/attendance/devices.routes';
 import { holidayRoutes, shiftRoutes } from '../modules/attendance/shifts-holidays.routes';
 import { auditRoutes } from '../modules/audit/audit.routes';
 import { authRoutes } from '../modules/auth/auth.routes';
@@ -28,6 +30,8 @@ apiRouter.get('/health', (_req, res) => {
 // Public
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/public', publicRoutes);
+// Sync agents authenticate with a per-device key, not a user session.
+apiRouter.use('/device-agent', agentRoutes);
 
 // Everything below requires a valid access token.
 apiRouter.use(authenticate);
@@ -41,6 +45,8 @@ apiRouter.use('/employees', employeeRoutes);
 apiRouter.use('/departments', departmentRoutes);
 apiRouter.use('/designations', designationRoutes);
 apiRouter.use('/documents', documentRoutes);
+apiRouter.use('/attendance/devices', deviceRoutes);
+apiRouter.use('/attendance/punches', punchRoutes);
 apiRouter.use('/attendance', attendanceRoutes);
 apiRouter.use('/shifts', shiftRoutes);
 apiRouter.use('/holidays', holidayRoutes);

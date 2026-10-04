@@ -15,6 +15,7 @@ import { orderBy, paginated, paging } from '../../utils/pagination';
 import { hashPassword, sendPasswordSetupEmail } from '../auth/auth.service';
 import type { assignShiftSchema, createEmployeeSchema, createSalarySchema, listEmployeesQuery, updateEmployeeSchema } from './employees.schemas';
 import { EXIT_STATUSES } from './employees.schemas';
+import { syncEmployeePunches } from '../attendance/punches.service';
 
 type CreateInput = z.infer<typeof createEmployeeSchema>;
 type UpdateInput = z.infer<typeof updateEmployeeSchema>;
@@ -137,6 +138,11 @@ async function assertReferences(orgId: string, input: Partial<CreateInput & Upda
   if (input.salaryStructureId) need(prisma.salaryStructure.findFirst({ where: { id: input.salaryStructureId, organisationId: orgId } }), 'Salary structure');
   await Promise.all(checks);
 
+  if (input.deviceUserId) {
+    const owner = await prisma.employee.findFirst({ where: { organisationId: orgId, deviceUserId: input.deviceUserId, ...(selfId ? { id: { not: selfId } } : {}) } });
+    if (owner) throw conflict(`Machine number ${input.deviceUserId} already belongs to ${fullName(owner)}`, 'DEVICE_USER_TAKEN');
+  }
+
   if (selfId && (input.managerId === selfId || input.supervisorId === selfId)) {
     throw badRequest('An employee cannot report to themselves', 'INVALID_MANAGER');
   }
@@ -244,6 +250,8 @@ export async function create(auth: AuthContext, input: CreateInput, actor: Audit
   );
 
   if (userId) await sendPasswordSetupEmail(userId);
+  // Scans the machine sent before this person was added show up straight away.
+  if (employee.deviceUserId) await syncEmployeePunches(orgId, employee.id, employee.deviceUserId);
   return getById(auth, employee.id);
 }
 
@@ -296,6 +304,9 @@ export async function update(auth: AuthContext, id: string, input: UpdateInput, 
     if (d.changed) await writeAudit(actor, { action: 'EMPLOYEE_UPDATED', module: 'employees', recordId: id, oldValue: d.oldValue, newValue: d.newValue }, tx);
   });
 
+  if (input.deviceUserId !== undefined && (input.deviceUserId ?? null) !== before.deviceUserId) {
+    await syncEmployeePunches(auth.organisationId, id, input.deviceUserId ?? null, before.deviceUserId);
+  }
   return getById(auth, id);
 }
 

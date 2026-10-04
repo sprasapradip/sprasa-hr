@@ -67,6 +67,7 @@ export interface Employee extends EmployeeListItem {
   supervisor: { id: string; firstName: string; lastName: string; employeeCode: string } | null;
   branch: string | null;
   workLocation: string | null;
+  deviceUserId: string | null;
   bankName: string | null;
   bankAccountNumber: string | null;
   ssfNumber: string | null;

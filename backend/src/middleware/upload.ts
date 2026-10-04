@@ -14,6 +14,7 @@ const EXTENSIONS: Record<string, string[]> = {
   'application/msword': ['.doc'],
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
   'text/csv': ['.csv'],
+  'text/plain': ['.txt', '.dat', '.csv'],
   'application/vnd.ms-excel': ['.csv', '.xls'],
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
 };
@@ -35,6 +36,9 @@ export const SPREADSHEET_TYPES = [
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ];
+
+/** Thumb-machine logs: the USB .dat/.txt download, or a CSV/Excel report from the vendor software. */
+export const PUNCH_LOG_TYPES = [...SPREADSHEET_TYPES, 'text/plain'];
 
 function ensureDir(dir: string) {
   fs.mkdirSync(dir, { recursive: true });

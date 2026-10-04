@@ -1,21 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, Clock, LogIn, LogOut, Plane, Receipt } from 'lucide-react';
+import { CalendarDays, Plane, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Money, PageHeader } from '@/components/common';
 import { LeaveBalanceCards } from '@/components/common/LeaveBalanceCards';
 import { Button } from '@/components/ui/button';
-import { Card, CardBody, CardHeader, EmptyState, Skeleton, Stat, StatusBadge } from '@/components/ui/display';
+import { Card, CardBody, CardHeader, EmptyState, Stat, StatusBadge } from '@/components/ui/display';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useApiMutation } from '@/lib/mutation';
 import { formatDate } from '@/lib/utils';
 import type { LeaveBalance } from '@/types';
 import { ApplyLeaveDialog } from '../leave/ApplyLeaveDialog';
+import { TodayAttendanceCard, type TodayAttendance } from './TodayAttendanceCard';
 
-interface MyDashboard {
+interface MyDashboard extends TodayAttendance {
   today: string;
-  attendanceToday: { checkIn: string | null; checkOut: string | null; status: string; lateMinutes: number } | null;
   monthTotals: { present: number; absent: number; late: number; leave: number; halfDay: number };
   leaveBalances: LeaveBalance[];
   recentLeave: { id: string; leaveType: string; startDate: string; endDate: string; totalDays: number; status: string }[];
@@ -28,10 +27,6 @@ export default function MyDashboardPage() {
   const { user } = useAuth();
   const [applyOpen, setApplyOpen] = useState(false);
   const { data, isLoading } = useQuery({ queryKey: ['my-dashboard'], queryFn: () => api.get<MyDashboard>('/me/dashboard') });
-  const inv = [['my-dashboard'], ['attendance-month']];
-  const checkIn = useApiMutation(() => api.post('/me/attendance/check-in'), { success: 'Checked in. Have a good day.', invalidate: inv });
-  const checkOut = useApiMutation(() => api.post('/me/attendance/check-out'), { success: 'Checked out', invalidate: inv });
-  const a = data?.attendanceToday;
 
   return (
     <div className="space-y-5">
@@ -45,42 +40,7 @@ export default function MyDashboardPage() {
         }
       />
 
-      <Card className="p-5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="rounded-lg bg-brand-50 p-2.5 text-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
-              <Clock className="size-5" aria-hidden />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-fg">Today’s attendance</p>
-              {isLoading ? (
-                <Skeleton className="mt-1 h-4 w-40" />
-              ) : a?.checkIn ? (
-                <p className="num text-sm text-muted">
-                  In {a.checkIn}
-                  {a.checkOut ? ` · Out ${a.checkOut}` : ''} {a.lateMinutes > 0 && `· ${a.lateMinutes} min late`}
-                </p>
-              ) : a ? (
-                <StatusBadge status={a.status} />
-              ) : (
-                <p className="text-sm text-muted">You haven’t checked in yet.</p>
-              )}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {!a?.checkIn && (
-              <Button size="lg" onClick={() => checkIn.mutate()} loading={checkIn.isPending} disabled={Boolean(a)}>
-                <LogIn /> Check in
-              </Button>
-            )}
-            {a?.checkIn && !a.checkOut && (
-              <Button size="lg" variant="secondary" onClick={() => checkOut.mutate()} loading={checkOut.isPending}>
-                <LogOut /> Check out
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
+      <TodayAttendanceCard />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Present this month" value={data?.monthTotals.present} tone="green" loading={isLoading} />

@@ -14,6 +14,7 @@ import { paginated, paginationQuery, paging } from '../../utils/pagination';
 import { nullable, optional, zDate, zTime } from '../../utils/validation';
 import { EXIT_STATUSES } from '../employees/employees.schemas';
 import { fullName } from '../employees/employees.service';
+import { scansByDay } from './punches.service';
 
 export const ATTENDANCE_STATUSES = ['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'LEAVE', 'HOLIDAY', 'WEEKEND', 'WORK_FROM_HOME'] as const;
 
@@ -243,17 +244,18 @@ export async function selfCheck(auth: AuthContext, kind: 'in' | 'out', actor: Au
 /** One employee's month, with every day filled in (records, holidays, weekends). */
 export async function monthFor(organisationId: string, employeeId: string, year: number, month: number) {
   const { start, end } = monthRange(year, month);
-  const [records, cal, holidays] = await Promise.all([
+  const [records, cal, holidays, scans] = await Promise.all([
     prisma.attendance.findMany({ where: { employeeId, date: { gte: start, lte: end } }, orderBy: { date: 'asc' } }),
     loadWorkCalendar(organisationId, start, end),
     prisma.holiday.findMany({ where: { organisationId, status: 'ACTIVE', date: { gte: start, lte: end } } }),
+    scansByDay(employeeId, start, end),
   ]);
   const byDate = new Map(records.map((r) => [formatDateOnly(r.date), r]));
   const holidayName = new Map(holidays.map((h) => [formatDateOnly(h.date), h.name]));
   const days = [];
   for (let d = start; d <= end; d = new Date(d.getTime() + 86_400_000)) {
     const key = formatDateOnly(d);
-    days.push({ date: key, dayType: dayKind(d, cal), holiday: holidayName.get(key) ?? null, record: byDate.get(key) ?? null });
+    days.push({ date: key, dayType: dayKind(d, cal), holiday: holidayName.get(key) ?? null, record: byDate.get(key) ?? null, scans: scans.get(key) ?? [] });
   }
   const totals = {
     present: records.filter((r) => ['PRESENT', 'LATE', 'WORK_FROM_HOME'].includes(r.status)).length,
@@ -263,6 +265,7 @@ export async function monthFor(organisationId: string, employeeId: string, year:
     leave: records.filter((r) => r.status === 'LEAVE').length,
     overtimeMinutes: records.reduce((s, r) => s + r.overtimeMinutes, 0),
     lateMinutes: records.reduce((s, r) => s + r.lateMinutes, 0),
+    workMinutes: records.reduce((s, r) => s + r.workMinutes, 0),
   };
   return { year, month, days, totals };
 }

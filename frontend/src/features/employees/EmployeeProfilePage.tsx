@@ -211,6 +211,7 @@ function EmploymentTab({ e }: { e: Employee }) {
               { label: 'Supervisor', value: e.supervisor && `${e.supervisor.firstName} ${e.supervisor.lastName}` },
               { label: 'Branch', value: e.branch },
               { label: 'Work location', value: e.workLocation },
+              { label: 'Thumb machine ID', value: e.deviceUserId },
             ]}
           />
         </CardBody>

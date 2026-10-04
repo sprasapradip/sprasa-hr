@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { paginationQuery } from '../../utils/pagination';
 import { nullable, optional, zDate, zMoney, zPhone } from '../../utils/validation';
+import { normaliseDeviceUserId } from '../attendance/punch-file.parser';
 
 export const EMPLOYMENT_TYPES = ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERN', 'TEMPORARY'] as const;
 export const EMPLOYMENT_STATUSES = ['ACTIVE', 'PROBATION', 'ON_LEAVE', 'SUSPENDED', 'RESIGNED', 'TERMINATED', 'RETIRED'] as const;
@@ -41,6 +42,8 @@ const employeeFields = {
   pfNumber: nullable(z.string().trim().max(40)),
   citNumber: nullable(z.string().trim().max(40)),
   taxCategory: z.enum(['INDIVIDUAL', 'COUPLE']).default('INDIVIDUAL'),
+  /** User number on the thumb machine. */
+  deviceUserId: nullable(z.string().trim().regex(/^[\w-]{1,30}$/, 'Use the number shown on the machine').transform(normaliseDeviceUserId)),
   notes: nullable(z.string().trim().max(2000)),
 };
 

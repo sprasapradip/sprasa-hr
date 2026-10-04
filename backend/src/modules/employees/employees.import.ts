@@ -8,6 +8,8 @@ import type { AuthContext } from '../../types/express';
 import { parseDateOnly, todayIn } from '../../utils/dates';
 import { unprocessable } from '../../utils/errors';
 import { dec } from '../../utils/money';
+import { normaliseDeviceUserId } from '../attendance/punch-file.parser';
+import { syncEmployeePunches } from '../attendance/punches.service';
 import { createEmployeeSchema } from './employees.schemas';
 
 /** Columns in the import template, in order. */
@@ -28,6 +30,7 @@ export const IMPORT_COLUMNS = [
   { key: 'managerCode', header: 'Manager Employee ID', required: false, example: 'EMP-0001' },
   { key: 'branch', header: 'Branch', required: false, example: 'Kathmandu' },
   { key: 'workLocation', header: 'Work Location', required: false, example: 'Head Office' },
+  { key: 'deviceUserId', header: 'Thumb Machine ID', required: false, example: '101' },
   { key: 'basicSalary', header: 'Basic Salary (NPR)', required: false, example: '45000' },
   { key: 'bankName', header: 'Bank Name', required: false, example: 'Nabil Bank' },
   { key: 'bankAccountNumber', header: 'Bank Account Number', required: false, example: '0010012345678' },
@@ -110,7 +113,7 @@ export async function validateRows(auth: AuthContext, rows: Record<string, strin
   const [departments, designations, employees] = await Promise.all([
     prisma.department.findMany({ where: { organisationId: orgId, deletedAt: null }, select: { id: true, code: true, name: true } }),
     prisma.designation.findMany({ where: { organisationId: orgId, deletedAt: null }, select: { id: true, name: true } }),
-    prisma.employee.findMany({ where: { organisationId: orgId }, select: { id: true, employeeCode: true, email: true } }),
+    prisma.employee.findMany({ where: { organisationId: orgId }, select: { id: true, employeeCode: true, email: true, deviceUserId: true } }),
   ]);
   const deptBy = new Map<string, string>();
   departments.forEach((d) => {
@@ -120,9 +123,13 @@ export async function validateRows(auth: AuthContext, rows: Record<string, strin
   const desigBy = new Map(designations.map((d) => [d.name.toLowerCase(), d.id]));
   const existingCodes = new Map(employees.map((e) => [e.employeeCode.toUpperCase(), e.id]));
   const fileCodes = new Map<string, number>();
+  const usedMachineIds = new Set(employees.map((e) => e.deviceUserId).filter(Boolean));
+  const fileMachineIds = new Map<string, number>();
   for (const r of rows) {
     const code = (r.employeeCode ?? '').toUpperCase();
     if (code) fileCodes.set(code, (fileCodes.get(code) ?? 0) + 1);
+    const machineId = r.deviceUserId ? normaliseDeviceUserId(r.deviceUserId) : '';
+    if (machineId) fileMachineIds.set(machineId, (fileMachineIds.get(machineId) ?? 0) + 1);
   }
 
   const results: RowResult[] = rows.map((data, i) => {
@@ -132,6 +139,9 @@ export async function validateRows(auth: AuthContext, rows: Record<string, strin
     const code = (data.employeeCode ?? '').toUpperCase();
     if (code && existingCodes.has(code)) errors.push(`Employee ID ${code} already exists`);
     if (code && (fileCodes.get(code) ?? 0) > 1) errors.push(`Employee ID ${code} appears more than once in the file`);
+    const machineId = data.deviceUserId ? normaliseDeviceUserId(data.deviceUserId) : '';
+    if (machineId && usedMachineIds.has(machineId)) errors.push(`Thumb machine ID ${machineId} is already given to another employee`);
+    if (machineId && (fileMachineIds.get(machineId) ?? 0) > 1) errors.push(`Thumb machine ID ${machineId} appears more than once in the file`);
     if (data.department && !deptBy.has(data.department.toLowerCase())) errors.push(`Department "${data.department}" not found`);
     if (data.designation && !desigBy.has(data.designation.toLowerCase())) errors.push(`Designation "${data.designation}" not found`);
     if (data.managerCode) {
@@ -207,6 +217,7 @@ export async function commit(auth: AuthContext, rows: Record<string, string>[], 
             designationId: desig(data.designation),
             branch: input.branch ?? null,
             workLocation: input.workLocation ?? null,
+            deviceUserId: input.deviceUserId ?? null,
             bankName: input.bankName ?? null,
             bankAccountNumber: input.bankAccountNumber ?? null,
             panNumber: input.panNumber ?? null,
@@ -241,5 +252,8 @@ export async function commit(auth: AuthContext, rows: Record<string, string>[], 
     },
     { timeout: 120_000 },
   );
+  // Pick up any scans the machine already sent for these people.
+  const withMachineIds = await prisma.employee.findMany({ where: { organisationId: orgId, deviceUserId: { not: null }, employeeCode: { in: rows.map((r) => (r.employeeCode ?? '').toUpperCase()) } }, select: { id: true, deviceUserId: true } });
+  for (const e of withMachineIds) await syncEmployeePunches(orgId, e.id, e.deviceUserId);
   return { imported: created };
 }

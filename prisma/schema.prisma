@@ -108,6 +108,12 @@ enum AttendanceSource {
   EMPLOYEE
 }
 
+enum PunchSource {
+  DEVICE_PUSH
+  DEVICE_AGENT
+  FILE_IMPORT
+}
+
 enum HolidayType {
   PUBLIC
   ORGANISATION
@@ -226,6 +232,8 @@ model Organisation {
   leaveTypes         LeaveType[]
   leaveRequests      LeaveRequest[]
   attendance         Attendance[]
+  attendanceDevices  AttendanceDevice[]
+  attendancePunches  AttendancePunch[]
   documents          EmployeeDocument[]
   salaryComponents   SalaryComponent[]
   salaryStructures   SalaryStructure[]
@@ -444,6 +452,8 @@ model Employee {
   pfNumber              String?
   citNumber             String?
   taxCategory           TaxCategory      @default(INDIVIDUAL)
+  /// The user number this person is enrolled under on the thumb machine (ZKTeco "PIN" / "AC-No").
+  deviceUserId          String?
   notes                 String?
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
@@ -455,6 +465,7 @@ model Employee {
   documents          EmployeeDocument[]
   shifts             EmployeeShift[]
   attendance         Attendance[]
+  punches            AttendancePunch[]
   leaveBalances      LeaveBalance[]
   leaveRequests      LeaveRequest[]      @relation("LeaveRequestEmployee")
   salaries           EmployeeSalary[]
@@ -463,6 +474,7 @@ model Employee {
   payslips           Payslip[]
 
   @@unique([organisationId, employeeCode])
+  @@unique([organisationId, deviceUserId])
   @@index([organisationId, status])
   @@index([organisationId, departmentId])
   @@index([organisationId, lastName, firstName])
@@ -575,6 +587,52 @@ model Attendance {
 
   @@unique([employeeId, date])
   @@index([organisationId, date, status])
+}
+
+/// A biometric (thumb / face / card) attendance machine.
+model AttendanceDevice {
+  id             String       @id @default(uuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  name           String
+  location       String?
+  /// Serial number the device reports when it pushes logs (ZKTeco ADMS / "cloud server" mode).
+  serialNumber   String?      @unique
+  /// SHA-256 of the key a sync agent uses. The key itself is shown once and never stored.
+  agentKeyHash   String?      @unique
+  status         RecordStatus @default(ACTIVE)
+  lastSeenAt     DateTime?
+  lastPunchAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  punches AttendancePunch[]
+
+  @@unique([organisationId, name])
+}
+
+/// One raw scan from a device or an imported log file. Attendance rows are built from these.
+model AttendancePunch {
+  id             String           @id @default(uuid())
+  organisationId String
+  organisation   Organisation     @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  deviceId       String?
+  device         AttendanceDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  deviceUserId   String
+  /// Null until a matching employee has this deviceUserId.
+  employeeId     String?
+  employee       Employee?        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  /// Wall-clock time on the device (organisation timezone), stored as if it were UTC so it never shifts.
+  punchedAt      DateTime
+  source         PunchSource
+  /// Device's own in/out flag and verify mode (finger, face, card…), kept for reference only.
+  deviceState    Int?
+  verifyMode     Int?
+  createdAt      DateTime         @default(now())
+
+  @@unique([organisationId, deviceUserId, punchedAt])
+  @@index([employeeId, punchedAt])
+  @@index([organisationId, employeeId])
 }
 
 model Holiday {

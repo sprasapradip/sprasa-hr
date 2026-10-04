@@ -48,6 +48,7 @@ const schema = z.object({
   supervisorId: z.string().nullable().optional(),
   branch: opt,
   workLocation: opt,
+  deviceUserId: z.string().trim().regex(/^[\w-]{0,30}$/, 'Use the number shown on the machine').optional(),
   bankName: opt,
   bankAccountNumber: opt,
   ssfNumber: opt,
@@ -319,6 +320,9 @@ export default function EmployeeFormPage() {
                 )}
                 <Field label="Branch">{(p) => <Input {...p} {...register('branch')} placeholder="Head Office" />}</Field>
                 <Field label="Work location">{(p) => <Input {...p} {...register('workLocation')} placeholder="Kathmandu office" />}</Field>
+                <Field label="Thumb machine ID" hint="The user number this person was enrolled under on the attendance machine" error={e.deviceUserId?.message}>
+                  {(p) => <Input {...p} {...register('deviceUserId')} inputMode="numeric" placeholder="e.g. 12" className="num" />}
+                </Field>
               </FormGrid>
               {editing && (
                 <Field label="Reason for change" className="mt-4" hint="Saved on the employment history when department, designation, manager or status changes">

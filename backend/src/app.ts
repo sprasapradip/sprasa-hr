@@ -7,6 +7,7 @@ import { env } from './config/env';
 import { logger } from './lib/logger';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { apiLimiter, requestId } from './middleware/security';
+import { iclockRoutes } from './modules/attendance/device-gateway.routes';
 import { apiRouter } from './routes';
 
 export function createApp() {
@@ -26,7 +27,7 @@ export function createApp() {
         req: (req) => ({ id: req.id, method: req.method, url: req.url }),
         res: (res) => ({ statusCode: res.statusCode }),
       },
-      autoLogging: { ignore: (req) => req.url === '/api/v1/health' },
+      autoLogging: { ignore: (req) => req.url === '/api/v1/health' || Boolean(req.url?.startsWith('/iclock/getrequest')) },
     }),
   );
   app.use(
@@ -43,6 +44,9 @@ export function createApp() {
       exposedHeaders: ['Content-Disposition', 'X-Request-Id'],
     }),
   );
+  // Thumb machines push scans here (ZKTeco ADMS). Mounted before the body parsers: they send plain text.
+  app.use('/iclock', iclockRoutes);
+
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: false, limit: '100kb' }));
   app.use(cookieParser());

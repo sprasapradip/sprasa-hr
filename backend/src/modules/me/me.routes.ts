@@ -12,6 +12,7 @@ import { toNumber } from '../../utils/money';
 import { paginationQuery } from '../../utils/pagination';
 import { nullable, zPhone } from '../../utils/validation';
 import * as attendance from '../attendance/attendance.service';
+import { scansByDay } from '../attendance/punches.service';
 import * as documents from '../documents/documents.service';
 import * as employees from '../employees/employees.service';
 import * as leave from '../leave/leave.service';
@@ -62,8 +63,9 @@ meRoutes.get('/dashboard', async (req, res) => {
   const auth = self(req.auth!);
   const id = auth.employeeId!;
   const today = todayIn();
-  const [todayRecord, month, balances, requests, latestPayslip, unread, holidays] = await Promise.all([
+  const [todayRecord, todayScans, month, balances, requests, latestPayslip, unread, holidays] = await Promise.all([
     prisma.attendance.findUnique({ where: { employeeId_date: { employeeId: id, date: today } } }),
+    scansByDay(id, today, today),
     attendance.monthFor(auth.organisationId, id, today.getUTCFullYear(), today.getUTCMonth() + 1),
     leave.balances(auth, { employeeId: id }),
     prisma.leaveRequest.findMany({ where: { employeeId: id }, include: { leaveType: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 5 }),
@@ -76,6 +78,7 @@ meRoutes.get('/dashboard', async (req, res) => {
     data: {
       today: formatDateOnly(today),
       attendanceToday: todayRecord,
+      scansToday: todayScans.get(formatDateOnly(today)) ?? [],
       monthTotals: month.totals,
       leaveBalances: balances,
       recentLeave: requests.map((r) => ({ id: r.id, leaveType: r.leaveType.name, startDate: formatDateOnly(r.startDate), endDate: formatDateOnly(r.endDate), totalDays: toNumber(r.totalDays), status: r.status })),
