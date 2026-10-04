@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, ChevronLeft, ChevronRight, Fingerprint, List } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Skeleton, StatusBadge } from '@/components/ui/display';
+import { ApprovalBadge, Skeleton, StatusBadge, type ApprovalStatus } from '@/components/ui/display';
 import { api } from '@/lib/api';
 import { cn, MONTH_NAMES, minutesToHours, todayISO } from '@/lib/utils';
 import type { AttendanceStatus } from '@/types';
@@ -16,7 +16,7 @@ interface Day {
   date: string;
   dayType: 'WORKING' | 'WEEKEND' | 'HOLIDAY';
   holiday: string | null;
-  record: { status: AttendanceStatus; checkIn: string | null; checkOut: string | null; workMinutes: number; lateMinutes: number; earlyLeaveMinutes: number; overtimeMinutes: number; remarks: string | null; source: string } | null;
+  record: { status: AttendanceStatus; checkIn: string | null; checkOut: string | null; workMinutes: number; lateMinutes: number; earlyLeaveMinutes: number; overtimeMinutes: number; remarks: string | null; source: string; approvalStatus?: ApprovalStatus | null; rejectionReason?: string | null } | null;
   scans: Scan[];
 }
 
@@ -186,6 +186,7 @@ function DayList({ days, today }: { days: Day[]; today: string }) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 {status ? <StatusBadge status={status} /> : <span className="text-xs text-subtle">No record</span>}
+                <ApprovalBadge status={r?.approvalStatus} />
                 {r?.checkIn && (
                   <span className="num text-sm text-fg">
                     {r.checkIn} – {r.checkOut ?? (d.date === today ? 'still in' : 'no check-out')}
@@ -269,6 +270,7 @@ function Calendar({ days, today, selected, onSelect }: { days: Day[]; today: str
           {sel.record ? (
             <div className="mt-1 flex flex-wrap items-center gap-3 text-muted">
               <StatusBadge status={sel.record.status} />
+              <ApprovalBadge status={sel.record.approvalStatus} />
               {sel.record.checkIn && (
                 <span className="num">
                   {sel.record.checkIn} – {sel.record.checkOut ?? '…'}
@@ -284,6 +286,7 @@ function Calendar({ days, today, selected, onSelect }: { days: Day[]; today: str
           )}
           <ScanTimes scans={sel.scans} className="mt-2" />
           {sel.record && sourceLabel(sel.record.source) && <p className="mt-1 text-xs text-subtle">Recorded by {sourceLabel(sel.record.source)}</p>}
+          {sel.record?.approvalStatus === 'REJECTED' && sel.record.rejectionReason && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">Rejected by HR: {sel.record.rejectionReason}</p>}
         </div>
       )}
     </>

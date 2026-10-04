@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Code, ExportMenu, FilterSelect, PageHeader, SearchInput, Toolbar } from '@/components/common';
 import { DataTable, Pagination, type Column } from '@/components/common/DataTable';
 import { Button } from '@/components/ui/button';
-import { Badge, Card, EmptyState, Stat, StatusBadge } from '@/components/ui/display';
+import { ApprovalBadge, Badge, Card, EmptyState, Stat, StatusBadge } from '@/components/ui/display';
 import { Input } from '@/components/ui/form';
 import { ConfirmDialog } from '@/components/ui/overlay';
 import { useListParams } from '@/hooks';
@@ -61,7 +61,12 @@ export default function AttendancePage() {
     { key: 'out', header: 'Out', cell: (r) => <span className="num">{r.checkOut ?? '—'}</span> },
     { key: 'late', header: 'Late', align: 'right', optional: true, cell: (r) => (r.lateMinutes ? `${r.lateMinutes} min` : '—') },
     { key: 'ot', header: 'Overtime', align: 'right', optional: true, cell: (r) => (r.overtimeMinutes ? minutesToHours(r.overtimeMinutes) : '—') },
-    { key: 'status', header: 'Status', mobile: 'badge', cell: (r) => <StatusBadge status={r.status} /> },
+    { key: 'status', header: 'Status', mobile: 'badge', cell: (r) => (
+        <span className="inline-flex flex-wrap gap-1">
+          <StatusBadge status={r.status} />
+          <ApprovalBadge status={r.approvalStatus} />
+        </span>
+      ) },
     { key: 'source', header: 'Source', optional: true, cell: (r) => <span className="text-xs text-subtle">{r.source.toLowerCase()}</span> },
   ];
 

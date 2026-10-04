@@ -2,14 +2,14 @@ import type { HTMLAttributes, ReactNode } from 'react';
 import { cn, initials } from '@/lib/utils';
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('rounded-lg border border-border bg-surface shadow-xs', className)} {...props} />;
+  return <div className={cn('rounded-xl border border-border bg-surface shadow-card', className)} {...props} />;
 }
 
 export function CardHeader({ title, description, actions, className }: { title: ReactNode; description?: ReactNode; actions?: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-3.5', className)}>
+    <div className={cn('flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-4', className)}>
       <div className="min-w-0">
-        <h2 className="text-sm font-semibold text-fg">{title}</h2>
+        <h2 className="text-[14.5px] font-semibold tracking-tight text-fg">{title}</h2>
         {description && <p className="mt-0.5 text-xs text-subtle">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
@@ -88,6 +88,20 @@ export function StatusBadge({ status, className }: { status: string; className?:
   );
 }
 
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+/** Review state of a self check-in. Renders nothing for records that need no review. */
+export function ApprovalBadge({ status, className }: { status: ApprovalStatus | null | undefined; className?: string }) {
+  if (!status) return null;
+  const meta = { PENDING: ['amber', 'Awaiting approval'], APPROVED: ['green', 'Approved'], REJECTED: ['red', 'Rejected'] } as const;
+  const [tone, label] = meta[status];
+  return (
+    <Badge tone={tone} className={className}>
+      {label}
+    </Badge>
+  );
+}
+
 export function Skeleton({ className }: { className?: string }) {
   return <div className={cn('animate-pulse rounded-md bg-surface-2', className)} aria-hidden />;
 }
@@ -101,15 +115,26 @@ export function Avatar({ name, src, size = 'md', className }: { name: string; sr
   );
 }
 
+const STAT_ACCENT: Record<Tone, string> = {
+  neutral: 'bg-slate-400',
+  green: 'bg-emerald-500',
+  teal: 'bg-brand-500',
+  amber: 'bg-amber-500',
+  red: 'bg-rose-500',
+  blue: 'bg-sky-500',
+  violet: 'bg-violet-500',
+};
+
 export function Stat({ label, value, hint, icon, tone = 'teal', loading }: { label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: Tone; loading?: boolean }) {
   return (
-    <Card className="p-4">
+    <Card className="group relative overflow-hidden p-4 transition-shadow hover:shadow-card-hover sm:p-5">
+      <span className={cn('absolute inset-x-0 top-0 h-0.5 opacity-70', STAT_ACCENT[tone])} aria-hidden />
       <div className="flex items-start justify-between gap-3">
         <p className="text-[13px] font-medium text-muted">{label}</p>
-        {icon && <span className={cn('rounded-md p-1.5 ring-1 ring-inset [&_svg]:size-4', tones[tone])}>{icon}</span>}
+        {icon && <span className={cn('rounded-lg p-2 ring-1 ring-inset [&_svg]:size-4', tones[tone])}>{icon}</span>}
       </div>
-      {loading ? <Skeleton className="mt-2 h-7 w-20" /> : <p className="num mt-1.5 text-2xl font-semibold tracking-tight text-fg">{value}</p>}
-      {hint && <p className="mt-1 text-xs text-subtle">{hint}</p>}
+      {loading ? <Skeleton className="mt-2 h-8 w-20" /> : <p className="num mt-1 text-[1.75rem] font-semibold leading-tight tracking-tight text-fg">{value}</p>}
+      {hint && <div className="mt-1.5 text-xs text-subtle">{hint}</div>}
     </Card>
   );
 }
@@ -117,7 +142,7 @@ export function Stat({ label, value, hint, icon, tone = 'teal', loading }: { lab
 export function EmptyState({ icon, title, description, action, className }: { icon?: ReactNode; title: string; description?: string; action?: ReactNode; className?: string }) {
   return (
     <div className={cn('flex flex-col items-center justify-center px-6 py-14 text-center', className)}>
-      {icon && <div className="mb-3 rounded-full bg-surface-2 p-3 text-subtle [&_svg]:size-6">{icon}</div>}
+      {icon && <div className="mb-4 rounded-2xl bg-surface-2 p-3.5 text-subtle ring-1 ring-inset ring-border [&_svg]:size-6">{icon}</div>}
       <p className="text-sm font-semibold text-fg">{title}</p>
       {description && <p className="mt-1 max-w-sm text-sm text-subtle">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
@@ -127,7 +152,7 @@ export function EmptyState({ icon, title, description, action, className }: { ic
 
 export function Alert({ tone = 'amber', title, children, icon, className }: { tone?: Tone; title?: string; children: ReactNode; icon?: ReactNode; className?: string }) {
   return (
-    <div role="note" className={cn('flex gap-3 rounded-lg px-4 py-3 text-sm ring-1 ring-inset [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0', tones[tone], className)}>
+    <div role="note" className={cn('flex gap-3 rounded-xl px-4 py-3 text-sm ring-1 ring-inset [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0', tones[tone], className)}>
       {icon}
       <div>
         {title && <p className="font-semibold">{title}</p>}

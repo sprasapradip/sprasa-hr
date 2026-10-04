@@ -3,7 +3,7 @@ import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type Selec
 import { cn } from '@/lib/utils';
 
 const control =
-  'block w-full rounded-md border border-border bg-surface px-3 text-sm text-fg shadow-xs placeholder:text-subtle transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-60 aria-[invalid=true]:border-rose-500 aria-[invalid=true]:focus:ring-rose-500/30';
+  'block w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg shadow-xs placeholder:text-subtle transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-60 aria-[invalid=true]:border-rose-500 aria-[invalid=true]:focus:ring-rose-500/30';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className, ...props }, ref) => (
   <input ref={ref} className={cn(control, 'h-9', props.type === 'date' || props.type === 'time' ? 'pr-2' : '', className)} {...props} />

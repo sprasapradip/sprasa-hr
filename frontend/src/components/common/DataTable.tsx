@@ -100,9 +100,9 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, onRowClick
         <table className="w-full text-sm">
           <caption className="sr-only">{caption}</caption>
           <thead>
-            <tr className="border-b border-border bg-surface-2/60">
+            <tr className="border-b border-border bg-surface-2/70">
               {visible.map((c) => (
-                <th key={c.key} scope="col" className={cn('whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-subtle', alignClass(c.align), c.className)}>
+                <th key={c.key} scope="col" className={cn('whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-subtle', alignClass(c.align), c.className)}>
                   {header(c)}
                 </th>
               ))}
@@ -135,7 +135,7 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, onRowClick
                   tabIndex={onRowClick ? 0 : undefined}
                 >
                   {visible.map((c) => (
-                    <td key={c.key} className={cn('px-4 py-2.5 align-middle text-fg', alignClass(c.align), c.align === 'right' && 'num', c.className)}>
+                    <td key={c.key} className={cn('px-4 py-3 align-middle text-fg', alignClass(c.align), c.align === 'right' && 'num', c.className)}>
                       {c.cell(row)}
                     </td>
                   ))}

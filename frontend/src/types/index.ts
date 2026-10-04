@@ -133,6 +133,10 @@ export interface AttendanceRecord {
   overtimeMinutes: number;
   remarks: string | null;
   source: string;
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+  approvedAt: string | null;
+  rejectionReason: string | null;
+  approvedByName?: string | null;
   employee: { id: string; employeeCode: string; department: Ref | null };
   shift: { id: string; name: string; startTime: string; endTime: string } | null;
 }

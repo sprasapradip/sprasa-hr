@@ -2,13 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Clock, LogIn, LogOut } from 'lucide-react';
 import { ScanTimes, sourceLabel, type Scan } from '@/components/common/AttendanceMonth';
 import { Button } from '@/components/ui/button';
-import { Card, Skeleton, StatusBadge } from '@/components/ui/display';
+import { ApprovalBadge, Card, Skeleton, StatusBadge, type ApprovalStatus } from '@/components/ui/display';
 import { api } from '@/lib/api';
 import { useApiMutation } from '@/lib/mutation';
 import { minutesToHours } from '@/lib/utils';
 
 export interface TodayAttendance {
-  attendanceToday: { checkIn: string | null; checkOut: string | null; status: string; lateMinutes: number; workMinutes: number; source: string } | null;
+  attendanceToday: { checkIn: string | null; checkOut: string | null; status: string; lateMinutes: number; workMinutes: number; source: string; approvalStatus: ApprovalStatus | null; rejectionReason: string | null } | null;
   scansToday: Scan[];
 }
 
@@ -21,8 +21,8 @@ function nowMinutes(timezone = 'Asia/Kathmandu') {
 export function TodayAttendanceCard() {
   const { data, isLoading } = useQuery({ queryKey: ['my-dashboard'], queryFn: () => api.get<TodayAttendance>('/me/dashboard') });
   const inv = [['my-dashboard'], ['attendance-month']];
-  const checkIn = useApiMutation(() => api.post('/me/attendance/check-in'), { success: 'Checked in. Have a good day.', invalidate: inv });
-  const checkOut = useApiMutation(() => api.post('/me/attendance/check-out'), { success: 'Checked out', invalidate: inv });
+  const checkIn = useApiMutation(() => api.post('/me/attendance/check-in'), { success: 'Checked in. HR will review it shortly.', invalidate: inv });
+  const checkOut = useApiMutation(() => api.post('/me/attendance/check-out'), { success: 'Checked out. Sent to HR for approval.', invalidate: inv });
   const a = data?.attendanceToday;
   const sinceIn = a?.checkIn && !a.checkOut ? nowMinutes() - toMinutes(a.checkIn) : null;
   const via = sourceLabel(a?.source);
@@ -42,6 +42,7 @@ export function TodayAttendanceCard() {
               <>
                 <p className="num flex flex-wrap items-center gap-x-2 text-sm text-muted">
                   <StatusBadge status={a.status} />
+                  <ApprovalBadge status={a.approvalStatus} />
                   <span>In {a.checkIn}</span>
                   {a.checkOut && <span>· Out {a.checkOut}</span>}
                   {a.lateMinutes > 0 && <span>· {a.lateMinutes} min late</span>}
@@ -50,11 +51,15 @@ export function TodayAttendanceCard() {
                   {a.checkOut ? `${minutesToHours(a.workMinutes)} worked` : sinceIn !== null && sinceIn > 0 ? `${minutesToHours(sinceIn)} since you checked in` : null}
                   {via && ` · recorded by ${via}`}
                 </p>
+                {a.approvalStatus === 'PENDING' && <p className="text-xs text-amber-700 dark:text-amber-300">Waiting for HR to approve your check-in.</p>}
+                {a.approvalStatus === 'REJECTED' && (
+                  <p className="text-xs text-rose-600 dark:text-rose-400">HR did not approve this check-in{a.rejectionReason ? `: ${a.rejectionReason}` : ''}. Contact HR if this is wrong.</p>
+                )}
               </>
             ) : a ? (
               <StatusBadge status={a.status} />
             ) : (
-              <p className="text-sm text-muted">No check-in yet today. Scan your thumb at the machine, or check in here.</p>
+              <p className="text-sm text-muted">No check-in yet today. Scan your thumb at the machine, or check in here. App check-ins are approved by HR.</p>
             )}
             <ScanTimes scans={data?.scansToday ?? []} />
           </div>
@@ -65,7 +70,7 @@ export function TodayAttendanceCard() {
               <LogIn /> Check in
             </Button>
           )}
-          {a?.checkIn && !a.checkOut && (
+          {a?.checkIn && !a.checkOut && a.approvalStatus !== 'REJECTED' && (
             <Button size="lg" variant="secondary" onClick={() => checkOut.mutate()} loading={checkOut.isPending}>
               <LogOut /> Check out
             </Button>

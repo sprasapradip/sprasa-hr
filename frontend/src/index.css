@@ -31,13 +31,26 @@
   --color-primary: var(--primary);
   --color-primary-fg: var(--primary-fg);
   --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+
+  --shadow-xs: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.03);
+  --shadow-card-hover: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.04);
+  --shadow-pop: 0 12px 32px -8px rgb(15 23 42 / 0.18), 0 4px 8px -4px rgb(15 23 42 / 0.06);
+
+  --animate-fade-in: fade-in 0.22s ease-out both;
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
 }
 
 :root {
-  --bg: #f6f7f9;
+  --bg: #f5f7f8;
   --surface: #ffffff;
-  --surface-2: #f1f5f9;
-  --border: #e2e8f0;
+  --surface-2: #f1f5f7;
+  --border: #e4e9ee;
+  --sidebar: #fbfcfc;
   --fg: #0f172a;
   --muted: #475569;
   --subtle: #64748b;
@@ -48,10 +61,11 @@
 }
 
 .dark {
-  --bg: #0b1120;
+  --bg: #0a0f1a;
   --surface: #111827;
-  --surface-2: #1e293b;
-  --border: #253247;
+  --surface-2: #1a2333;
+  --border: #232f42;
+  --sidebar: #0d1320;
   --fg: #e2e8f0;
   --muted: #a8b4c6;
   --subtle: #8a98ad;
@@ -73,9 +87,32 @@
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
+  .dark {
+    --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-card-hover: 0 6px 16px -4px rgb(0 0 0 / 0.5);
+    --shadow-pop: 0 16px 40px -8px rgb(0 0 0 / 0.6);
+  }
   ::selection {
     background: color-mix(in srgb, var(--primary) 25%, transparent);
   }
+}
+
+/* Thin, unobtrusive scrollbars for sidebars and scroll areas. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* Soft brand wash used by hero banners. Light enough to stay "not overly colourful". */
+.hero-wash {
+  background:
+    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--primary) 14%, transparent) 0%, transparent 55%),
+    radial-gradient(80% 120% at 0% 100%, color-mix(in srgb, #0ea5a4 8%, transparent) 0%, transparent 60%),
+    var(--surface);
+}
+
+kbd {
+  font-family: var(--font-sans);
 }
 
 /* Numbers in tables and money line up like a ledger. */

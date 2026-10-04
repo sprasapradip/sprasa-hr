@@ -108,6 +108,14 @@ enum AttendanceSource {
   EMPLOYEE
 }
 
+/// Review state of a self check-in made from the app. Null when no review is needed
+/// (records entered by HR, imported or captured by a device).
+enum AttendanceApproval {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum PunchSource {
   DEVICE_PUSH
   DEVICE_AGENT
@@ -177,6 +185,7 @@ enum NotificationType {
   PAYSLIP_AVAILABLE
   DOCUMENT_EXPIRY
   ATTENDANCE_REMINDER
+  ATTENDANCE_APPROVAL
   SECURITY_ALERT
   GENERAL
 }
@@ -582,11 +591,17 @@ model Attendance {
   remarks           String?
   source            AttendanceSource @default(MANUAL)
   createdById       String?
+  /// Set for self check-ins from the app; HR approves or rejects them.
+  approvalStatus    AttendanceApproval?
+  approvedById      String?
+  approvedAt        DateTime?
+  rejectionReason   String?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
   @@unique([employeeId, date])
   @@index([organisationId, date, status])
+  @@index([organisationId, approvalStatus])
 }
 
 /// A biometric (thumb / face / card) attendance machine.

@@ -11,13 +11,13 @@ import { cn } from '@/lib/utils';
 
 export function PageHeader({ title, description, actions, breadcrumb }: { title: string; description?: ReactNode; actions?: ReactNode; breadcrumb?: ReactNode }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <Helmet>
         <title>{`${title} · Sprasa HR`}</title>
       </Helmet>
       <div className="min-w-0">
         {breadcrumb && <div className="mb-1 text-xs text-subtle">{breadcrumb}</div>}
-        <h1 className="text-xl font-semibold tracking-tight text-fg">{title}</h1>
+        <h1 className="text-[1.375rem] font-semibold tracking-tight text-fg sm:text-2xl">{title}</h1>
         {description && <p className="mt-1 text-sm text-subtle">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

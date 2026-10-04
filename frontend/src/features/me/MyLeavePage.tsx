@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Plane } from 'lucide-react';
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/common';
 import { DataTable, Pagination, type Column } from '@/components/common/DataTable';
 import { LeaveBalanceCards } from '@/components/common/LeaveBalanceCards';
@@ -13,7 +14,12 @@ import { ApplyLeaveDialog } from '../leave/ApplyLeaveDialog';
 import { LeaveRequestDrawer } from '../leave/LeaveRequestDrawer';
 
 export default function MyLeavePage() {
-  const [open, setOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const [open, setOpenState] = useState(params.get('apply') === '1');
+  const setOpen = (v: boolean) => {
+    setOpenState(v);
+    if (!v && params.has('apply')) setParams({}, { replace: true });
+  };
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
   const { data: balances, isLoading: balLoading } = useQuery({ queryKey: ['leave-balances', 'me'], queryFn: () => api.get<LeaveBalance[]>('/me/leave/balances') });

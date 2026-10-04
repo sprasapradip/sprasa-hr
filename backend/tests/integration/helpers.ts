@@ -1,5 +1,3 @@
-import { execSync } from 'node:child_process';
-import path from 'node:path';
 import request from 'supertest';
 import { createApp } from '../../src/app';
 import { prisma } from '../../src/lib/prisma';
@@ -11,15 +9,9 @@ import { Prisma } from '@prisma/client';
 export const app = createApp();
 export const PASSWORD = 'TestPass123';
 
-let migrated = false;
-
-/** Apply migrations to the test database once, then wipe all data before each suite. */
+/** Wipe all data before each suite. Migrations are applied once in tests/global-setup.ts. */
 export async function resetDb() {
-  if (!migrated) {
-    if (!process.env.DATABASE_URL?.includes('_test')) throw new Error('Refusing to run integration tests against a non-test database');
-    execSync('npx prisma migrate deploy', { cwd: path.resolve(__dirname, '../..'), stdio: 'ignore', env: process.env });
-    migrated = true;
-  }
+  if (!process.env.DATABASE_URL?.includes('_test')) throw new Error('Refusing to run integration tests against a non-test database');
   const tables = await prisma.$queryRaw<{ tablename: string }[]>`SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename <> '_prisma_migrations'`;
   await prisma.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
 }

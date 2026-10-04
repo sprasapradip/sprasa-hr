@@ -32,6 +32,7 @@ export const PERMISSIONS = {
   // Attendance
   'attendance.view': { module: 'attendance', description: 'View attendance' },
   'attendance.manage': { module: 'attendance', description: 'Record and edit attendance' },
+  'attendance.approve': { module: 'attendance', description: 'Approve or reject check-ins employees make from the app' },
   'shifts.manage': { module: 'attendance', description: 'Manage shifts and holidays' },
 
   // Leave

@@ -40,7 +40,7 @@ export function EmployeePicker({ value, onChange, placeholder = 'Select employee
             role="combobox"
             aria-expanded={open}
             aria-invalid={invalid || undefined}
-            className="flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 text-left text-sm shadow-xs focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 aria-[invalid=true]:border-rose-500"
+            className="flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 text-left text-sm shadow-xs focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 aria-[invalid=true]:border-rose-500"
           >
             <span className={cn('truncate', !value && 'text-subtle')}>{label || placeholder}</span>
             <ChevronsUpDown className="size-4 shrink-0 text-subtle" aria-hidden />
@@ -53,7 +53,7 @@ export function EmployeePicker({ value, onChange, placeholder = 'Select employee
         )}
       </div>
       <Popover.Portal>
-        <Popover.Content align="start" sideOffset={4} className="z-50 w-[var(--radix-popover-trigger-width)] min-w-64 rounded-lg border border-border bg-surface p-2 shadow-lg">
+        <Popover.Content align="start" sideOffset={4} className="z-50 w-[var(--radix-popover-trigger-width)] min-w-64 rounded-xl border border-border bg-surface p-2 shadow-pop">
           <Input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or ID…" aria-label="Search employees" />
           <ul role="listbox" className="mt-2 max-h-64 overflow-y-auto">
             {isLoading && <li className="px-2 py-2 text-sm text-subtle">Searching…</li>}

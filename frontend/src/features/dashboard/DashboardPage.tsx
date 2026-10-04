@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { Building2, CalendarClock, CalendarX2, Clock, Plane, UserCheck, Users, Wallet } from 'lucide-react';
+import { Building2, CalendarClock, CalendarX2, ClipboardCheck, Clock, Plane, UserCheck, UserPlus, Users, Wallet } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { ErrorState, PageHeader } from '@/components/common';
+import { ErrorState } from '@/components/common';
 import { DonutChart, HBarChart, STATUS_COLORS, TrendChart, VBarChart } from '@/components/common/charts';
 import { Button } from '@/components/ui/button';
 import { Avatar, Card, CardBody, CardHeader, EmptyState, Skeleton, Stat, StatusBadge } from '@/components/ui/display';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { usePendingCheckIns } from '@/layouts/AppLayout';
 import { formatCompact, formatDate, formatMoney } from '@/lib/utils';
 
 interface Dashboard {
@@ -38,31 +40,85 @@ export default function DashboardPage() {
   const { user, can } = useAuth();
   const { data, isLoading, error, refetch } = useQuery({ queryKey: ['dashboard'], queryFn: () => api.get<Dashboard>('/dashboard') });
   const c = data?.cards;
+  const { data: pendingCheckIns } = usePendingCheckIns();
   const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', hour: '2-digit', hour12: false }).format(new Date()));
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   if (error) return <ErrorState error={error} retry={() => refetch()} />;
 
+  const attendanceRate = c && c.activeEmployees > 0 ? Math.round(((c.presentToday + c.lateToday) / c.activeEmployees) * 100) : null;
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={`${greeting}, ${user?.name.split(' ')[0]}`}
-        description={data ? `Here is ${user?.organisation.name} on ${formatDate(data.today, 'long')}.` : undefined}
-        actions={
-          <>
+      <Helmet>
+        <title>Dashboard · Sprasa HR</title>
+      </Helmet>
+      <section className="hero-wash relative overflow-hidden rounded-2xl border border-border p-5 shadow-card sm:p-7">
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary">{data ? formatDate(data.today, 'long') : 'Today'}</p>
+            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-fg sm:text-[1.75rem]">
+              {greeting}, {user?.name.split(' ')[0]}
+            </h1>
+            <div className="mt-1.5 max-w-xl text-sm text-muted">
+              {c ? (
+                <>
+                  {user?.organisation.name} has <strong className="font-semibold text-fg">{c.activeEmployees}</strong> active people today
+                  {attendanceRate !== null && (
+                    <>
+                      {' '}with <strong className="font-semibold text-fg">{attendanceRate}%</strong> checked in
+                    </>
+                  )}
+                  {c.pendingLeaveRequests > 0 && (
+                    <>
+                      {' '}and <strong className="font-semibold text-fg">{c.pendingLeaveRequests}</strong> leave {c.pendingLeaveRequests === 1 ? 'request' : 'requests'} waiting
+                    </>
+                  )}
+                  .
+                </>
+              ) : (
+                <Skeleton className="h-4 w-72" />
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             {can('attendance.manage') && (
               <Button variant="secondary" asChild>
-                <Link to="/app/attendance/bulk">Mark attendance</Link>
+                <Link to="/app/attendance/bulk">
+                  <ClipboardCheck /> Mark attendance
+                </Link>
               </Button>
             )}
             {can('employees.create') && (
               <Button asChild>
-                <Link to="/app/employees/new">Add employee</Link>
+                <Link to="/app/employees/new">
+                  <UserPlus /> Add employee
+                </Link>
               </Button>
             )}
-          </>
-        }
-      />
+          </div>
+        </div>
+        {pendingCheckIns ? (
+          <Link
+            to="/app/attendance/approvals"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 ring-1 ring-inset ring-amber-200 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-200 dark:ring-amber-900"
+          >
+            <ClipboardCheck className="size-4" aria-hidden />
+            {pendingCheckIns} app check-{pendingCheckIns === 1 ? 'in needs' : 'ins need'} your approval
+          </Link>
+        ) : null}
+        {attendanceRate !== null && (
+          <div className="mt-5 max-w-md">
+            <div className="flex justify-between text-xs text-subtle">
+              <span>Attendance today</span>
+              <span className="num font-medium text-fg">{attendanceRate}%</span>
+            </div>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={attendanceRate} aria-valuemin={0} aria-valuemax={100} aria-label="Attendance today">
+              <div className="h-full rounded-full bg-primary transition-[width] duration-700" style={{ width: `${Math.min(attendanceRate, 100)}%` }} />
+            </div>
+          </div>
+        )}
+      </section>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Employees" value={c?.totalEmployees} hint={c && `${c.activeEmployees} active or on probation`} icon={<Users />} loading={isLoading} />

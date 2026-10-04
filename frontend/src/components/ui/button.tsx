@@ -5,15 +5,15 @@ import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 export const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all active:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer',
   {
     variants: {
       variant: {
-        primary: 'bg-primary text-primary-fg hover:bg-brand-700 dark:hover:bg-brand-400 shadow-sm',
-        secondary: 'bg-surface text-fg border border-border hover:bg-surface-2 shadow-sm',
+        primary: 'bg-primary text-primary-fg hover:bg-brand-700 dark:hover:bg-brand-400 shadow-sm shadow-brand-900/10 ring-1 ring-inset ring-white/10',
+        secondary: 'bg-surface text-fg border border-border hover:bg-surface-2 hover:border-slate-300 dark:hover:border-slate-600 shadow-xs',
         ghost: 'text-muted hover:bg-surface-2 hover:text-fg',
         danger: 'bg-rose-600 text-white hover:bg-rose-700 shadow-sm',
-        link: 'text-primary underline-offset-4 hover:underline px-0 h-auto',
+        link: 'text-primary underline-offset-4 hover:underline px-0 h-auto active:translate-y-0',
       },
       size: {
         sm: 'h-8 px-3 text-[13px]',

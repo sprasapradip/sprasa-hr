@@ -62,7 +62,9 @@ export async function processDays(organisationId: string, employeeId: string, da
     const existing = await db.attendance.findUnique({ where: { employeeId_date: { employeeId, date: day } } });
     if (existing && heldByHr(existing)) continue;
     // Someone who checked in on the web and scanned out on the machine: keep both.
-    if (existing?.source === 'EMPLOYEE' && existing.checkIn) {
+    // A rejected web check-in is ignored: the machine scans alone decide the day.
+    const rejectedWebEntry = existing?.approvalStatus === 'REJECTED';
+    if (existing?.source === 'EMPLOYEE' && existing.checkIn && !rejectedWebEntry) {
       const inMin = timeToMinutes(existing.checkIn);
       minutes.push(inMin);
       if (existing.checkOut) {
@@ -73,7 +75,10 @@ export async function processDays(organisationId: string, employeeId: string, da
 
     const picked = pickInOut(minutes)!;
     const computed = computeAttendance({ ...picked, shift: rule });
-    const data = { ...picked, ...computed, shiftId: shift?.id ?? null, source: 'DEVICE' as const };
+    // Scans are trusted. A day that still mixes in pending web times keeps waiting for HR.
+    const mixesPendingWebTimes = existing?.source === 'EMPLOYEE' && existing.approvalStatus === 'PENDING';
+    const review = mixesPendingWebTimes ? {} : { approvalStatus: null, approvedById: null, approvedAt: null, rejectionReason: null };
+    const data = { ...picked, ...computed, shiftId: shift?.id ?? null, source: 'DEVICE' as const, ...review };
     await db.attendance.upsert({
       where: { employeeId_date: { employeeId, date: day } },
       create: { organisationId, employeeId, date: day, ...data },

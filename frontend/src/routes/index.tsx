@@ -129,6 +129,7 @@ export const router = createBrowserRouter([
 
           // Attendance
           { path: 'attendance', element: guard(['attendance.view'], page(() => import('@/features/attendance/AttendancePage'))) },
+          { path: 'attendance/approvals', element: guard(['attendance.approve'], page(() => import('@/features/attendance/CheckInApprovalsPage'))) },
           { path: 'attendance/bulk', element: guard(['attendance.manage'], page(() => import('@/features/attendance/BulkAttendancePage'))) },
           { path: 'attendance/shifts', element: guard(['shifts.manage', 'attendance.view'], page(() => import('@/features/attendance/ShiftsPage'))) },
           { path: 'attendance/holidays', element: guard(['shifts.manage', 'attendance.view'], page(() => import('@/features/attendance/HolidaysPage'))) },

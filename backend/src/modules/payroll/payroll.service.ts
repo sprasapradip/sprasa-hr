@@ -142,7 +142,8 @@ async function calculateItems(tx: Tx, payrollId: string, orgId: string, year: nu
         }
       }
     }
-    const overtimeMinutes = att.reduce((s, a) => s + a.overtimeMinutes, 0);
+    // Overtime on self check-ins counts only once HR has approved them.
+    const overtimeMinutes = att.filter((a) => a.approvalStatus !== 'PENDING').reduce((s, a) => s + a.overtimeMinutes, 0);
     const unpaidDays = round2(outsideDays + unpaidLeaveDays + absentDays);
 
     const lines: SalaryLineInput[] = salary.lines

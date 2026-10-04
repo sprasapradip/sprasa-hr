@@ -48,6 +48,27 @@ attendanceRoutes.get('/roster', requirePermission('attendance.manage'), async (r
   res.json({ success: true, data: await service.roster(req.auth!, q.date, q.departmentId) });
 });
 
+// Self check-ins from the app waiting for HR.
+attendanceRoutes.get('/approvals', requirePermission('attendance.approve'), async (req, res) => {
+  res.json({ success: true, ...(await service.listApprovals(req.auth!, query(req, service.listApprovalsQuery))) });
+});
+
+attendanceRoutes.get('/approvals/count', requirePermission('attendance.approve'), async (req, res) => {
+  res.json({ success: true, data: { pending: await service.pendingApprovalCount(req.auth!) } });
+});
+
+attendanceRoutes.post('/approvals/approve', requirePermission('attendance.approve'), async (req, res) => {
+  const { ids } = body(req, service.approveSchema);
+  const data = await service.approveCheckIns(req.auth!, ids, actorFromRequest(req));
+  res.json({ success: true, data, message: data.approved === 1 ? 'Check-in approved' : `${data.approved} check-ins approved` });
+});
+
+attendanceRoutes.post('/approvals/reject', requirePermission('attendance.approve'), async (req, res) => {
+  const { ids, reason } = body(req, service.rejectSchema);
+  const data = await service.rejectCheckIns(req.auth!, ids, reason, actorFromRequest(req));
+  res.json({ success: true, data, message: data.rejected === 1 ? 'Check-in rejected' : `${data.rejected} check-ins rejected` });
+});
+
 attendanceRoutes.get('/employee/:id/month', requirePermission('attendance.view'), async (req, res) => {
   const { id } = params(req, idParam);
   const q = query(req, z.object({ year: z.coerce.number().int().min(2000).max(2100), month: z.coerce.number().int().min(1).max(12) }));

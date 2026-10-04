@@ -4,12 +4,13 @@ import { prisma, type Db } from '../../lib/prisma';
 import { employeeScope } from '../../services/access.service';
 import { diff, writeAudit, type AuditActor } from '../../services/audit.service';
 import { loadWorkCalendar } from '../../services/calendar.service';
+import { notify, userIdForEmployee } from '../../services/notification.service';
 import { computeAttendance } from '../../services/engines/attendance.engine';
 import { dayKind } from '../../services/engines/calendar.engine';
 import { resolveShift, resolveShifts, toShiftRule } from '../../services/shift-resolver.service';
 import type { AuthContext } from '../../types/express';
 import { formatDateOnly, monthRange, nowTimeIn, parseDateOnly, todayIn } from '../../utils/dates';
-import { badRequest, conflict, notFound } from '../../utils/errors';
+import { badRequest, conflict, forbidden, notFound } from '../../utils/errors';
 import { paginated, paginationQuery, paging } from '../../utils/pagination';
 import { nullable, optional, zDate, zTime } from '../../utils/validation';
 import { EXIT_STATUSES } from '../employees/employees.schemas';
@@ -133,7 +134,7 @@ export async function upsert(auth: AuthContext, input: z.infer<typeof upsertAtte
   const date = parseDateOnly(input.date);
   await assertEmployee(auth, input.employeeId, date);
   const computed = await buildRecord(prisma, auth.organisationId, input.employeeId, date, input);
-  const data = { checkIn: input.checkIn ?? null, checkOut: input.checkOut ?? null, remarks: input.remarks ?? null, source, createdById: auth.userId, ...computed };
+  const data = { checkIn: input.checkIn ?? null, checkOut: input.checkOut ?? null, remarks: input.remarks ?? null, source, createdById: auth.userId, ...computed, ...NO_REVIEW };
   const existing = await prisma.attendance.findUnique({ where: { employeeId_date: { employeeId: input.employeeId, date } } });
   const row = await prisma.attendance.upsert({
     where: { employeeId_date: { employeeId: input.employeeId, date } },
@@ -160,7 +161,8 @@ export async function update(auth: AuthContext, id: string, input: z.infer<typeo
     status: input.status,
   };
   const computed = await buildRecord(prisma, auth.organisationId, before.employeeId, before.date, merged);
-  const data = { ...merged, ...computed, remarks: input.remarks !== undefined ? input.remarks : before.remarks, source: 'ADMIN' as const };
+  // An HR edit is authoritative, so a pending self check-in no longer needs review.
+  const data = { ...merged, ...computed, remarks: input.remarks !== undefined ? input.remarks : before.remarks, source: 'ADMIN' as const, ...NO_REVIEW };
   const row = await prisma.attendance.update({ where: { id }, data, include });
   const d = diff(before as unknown as Record<string, unknown>, data);
   if (d.changed) await writeAudit(actor, { action: 'ATTENDANCE_UPDATED', module: 'attendance', recordId: id, oldValue: d.oldValue, newValue: d.newValue });
@@ -192,7 +194,7 @@ export async function bulk(auth: AuthContext, input: z.infer<typeof bulkAttendan
         const shift = shifts.get(e.employeeId) ?? null;
         const status = e.status ?? (!e.checkIn ? (kind === 'HOLIDAY' ? 'HOLIDAY' : kind === 'WEEKEND' ? 'WEEKEND' : 'ABSENT') : undefined);
         const computed = computeAttendance({ checkIn: e.checkIn, checkOut: e.checkOut, status, shift: shift ? toShiftRule(shift) : null });
-        const data = { checkIn: e.checkIn ?? null, checkOut: e.checkOut ?? null, remarks: e.remarks ?? null, source: 'ADMIN' as const, createdById: auth.userId, shiftId: shift?.id ?? null, ...computed };
+        const data = { checkIn: e.checkIn ?? null, checkOut: e.checkOut ?? null, remarks: e.remarks ?? null, source: 'ADMIN' as const, createdById: auth.userId, shiftId: shift?.id ?? null, ...computed, ...NO_REVIEW };
         await tx.attendance.upsert({
           where: { employeeId_date: { employeeId: e.employeeId, date } },
           create: { organisationId: auth.organisationId, employeeId: e.employeeId, date, ...data },
@@ -226,19 +228,115 @@ export async function selfCheck(auth: AuthContext, kind: 'in' | 'out', actor: Au
   const time = nowTimeIn(org.timezone);
   const existing = await prisma.attendance.findUnique({ where: { employeeId_date: { employeeId, date } } });
 
+  if (existing?.approvalStatus === 'REJECTED') throw conflict('HR rejected your check-in for today. Contact HR if this is wrong.', 'CHECK_IN_REJECTED');
   if (kind === 'in' && existing?.checkIn) throw conflict(`You already checked in at ${existing.checkIn}`, 'ALREADY_CHECKED_IN');
   if (kind === 'out' && !existing?.checkIn) throw badRequest('Check in first', 'NOT_CHECKED_IN');
   if (kind === 'out' && existing?.checkOut) throw conflict(`You already checked out at ${existing.checkOut}`, 'ALREADY_CHECKED_OUT');
 
   const entry = kind === 'in' ? { checkIn: time, checkOut: null } : { checkIn: existing!.checkIn, checkOut: time };
   const computed = await buildRecord(prisma, auth.organisationId, employeeId, date, entry);
+  // Self-reported times wait for HR. A check-out after approval reopens the day so the
+  // check-out time is reviewed too.
+  const review = { approvalStatus: 'PENDING' as const, approvedById: null, approvedAt: null, rejectionReason: null };
   const row = await prisma.attendance.upsert({
     where: { employeeId_date: { employeeId, date } },
-    create: { organisationId: auth.organisationId, employeeId, date, ...entry, ...computed, source: 'EMPLOYEE', createdById: auth.userId },
-    update: { ...entry, ...computed, source: 'EMPLOYEE' },
+    create: { organisationId: auth.organisationId, employeeId, date, ...entry, ...computed, source: 'EMPLOYEE', createdById: auth.userId, ...review },
+    update: { ...entry, ...computed, source: 'EMPLOYEE', ...review },
   });
-  await writeAudit(actor, { action: kind === 'in' ? 'CHECK_IN' : 'CHECK_OUT', module: 'attendance', recordId: row.id, newValue: { time } });
+  await writeAudit(actor, { action: kind === 'in' ? 'CHECK_IN' : 'CHECK_OUT', module: 'attendance', recordId: row.id, newValue: { time, approvalStatus: row.approvalStatus } });
   return row;
+}
+
+// ── Check-in approval ────────────────────────────────────────
+
+export const APPROVAL_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+
+/** Clears the review fields: used when HR, an import or a device writes the record. */
+export const NO_REVIEW = { approvalStatus: null, approvedById: null, approvedAt: null, rejectionReason: null } as const;
+
+export const listApprovalsQuery = paginationQuery.extend({
+  approvalStatus: z.enum(APPROVAL_STATUSES).default('PENDING'),
+  from: zDate.optional(),
+  to: zDate.optional(),
+  departmentId: z.string().uuid().optional(),
+});
+export const approveSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(500) });
+export const rejectSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(500), reason: z.string().trim().min(3, 'Give a reason').max(300) });
+
+export async function listApprovals(auth: AuthContext, q: z.infer<typeof listApprovalsQuery>) {
+  const where: Prisma.AttendanceWhereInput = { ...listWhere(auth, { ...q, status: undefined, date: undefined, employeeId: undefined }), approvalStatus: q.approvalStatus };
+  const [rows, total] = await Promise.all([
+    prisma.attendance.findMany({ where, include, orderBy: [{ date: q.approvalStatus === 'PENDING' ? 'asc' : 'desc' }, { checkIn: 'asc' }], ...paging(q) }),
+    prisma.attendance.count({ where }),
+  ]);
+  const reviewerIds = [...new Set(rows.map((r) => r.approvedById).filter((x): x is string => Boolean(x)))];
+  const reviewers = reviewerIds.length ? await prisma.user.findMany({ where: { id: { in: reviewerIds } }, select: { id: true, name: true } }) : [];
+  const reviewerName = new Map(reviewers.map((u) => [u.id, u.name]));
+  return paginated(
+    rows.map((r) => ({ ...r, employeeName: fullName(r.employee), approvedByName: r.approvedById ? (reviewerName.get(r.approvedById) ?? null) : null })),
+    total,
+    q,
+  );
+}
+
+export async function pendingApprovalCount(auth: AuthContext) {
+  return prisma.attendance.count({ where: { organisationId: auth.organisationId, approvalStatus: 'PENDING', employee: employeeScope(auth) } });
+}
+
+/** Pending records the caller may review. Nobody reviews their own check-in. */
+async function reviewable(auth: AuthContext, ids: string[]) {
+  const rows = await prisma.attendance.findMany({
+    where: { id: { in: ids }, organisationId: auth.organisationId, employee: employeeScope(auth) },
+    include: { employee: { select: { id: true, firstName: true, middleName: true, lastName: true } } },
+  });
+  if (rows.length !== ids.length) throw notFound('Attendance record');
+  if (auth.employeeId && rows.some((r) => r.employeeId === auth.employeeId)) throw forbidden('You cannot review your own check-in', 'SELF_REVIEW');
+  const notPending = rows.find((r) => r.approvalStatus !== 'PENDING');
+  if (notPending) throw conflict(`${fullName(notPending.employee)}'s check-in on ${formatDateOnly(notPending.date)} is no longer pending`, 'NOT_PENDING');
+  return rows;
+}
+
+export async function approveCheckIns(auth: AuthContext, ids: string[], actor: AuditActor) {
+  const rows = await reviewable(auth, ids);
+  const now = new Date();
+  await prisma.$transaction(async (tx) => {
+    await tx.attendance.updateMany({ where: { id: { in: ids }, approvalStatus: 'PENDING' }, data: { approvalStatus: 'APPROVED', approvedById: auth.userId, approvedAt: now, rejectionReason: null } });
+    for (const r of rows) {
+      await writeAudit(actor, { action: 'CHECK_IN_APPROVED', module: 'attendance', recordId: r.id, oldValue: { approvalStatus: 'PENDING' }, newValue: { approvalStatus: 'APPROVED', date: formatDateOnly(r.date), checkIn: r.checkIn, checkOut: r.checkOut } }, tx);
+    }
+  });
+  await notifyEmployees(auth.organisationId, rows, (r) => ({
+    title: 'Check-in approved',
+    message: `Your attendance for ${formatDateOnly(r.date)} (in ${r.checkIn}${r.checkOut ? `, out ${r.checkOut}` : ''}) was approved.`,
+  }));
+  return { approved: rows.length };
+}
+
+/** Rejected days become Absent, keeping the reported times for the record. */
+export async function rejectCheckIns(auth: AuthContext, ids: string[], reason: string, actor: AuditActor) {
+  const rows = await reviewable(auth, ids);
+  const now = new Date();
+  await prisma.$transaction(async (tx) => {
+    await tx.attendance.updateMany({
+      where: { id: { in: ids }, approvalStatus: 'PENDING' },
+      data: { approvalStatus: 'REJECTED', approvedById: auth.userId, approvedAt: now, rejectionReason: reason, status: 'ABSENT', workMinutes: 0, lateMinutes: 0, earlyLeaveMinutes: 0, overtimeMinutes: 0 },
+    });
+    for (const r of rows) {
+      await writeAudit(actor, { action: 'CHECK_IN_REJECTED', module: 'attendance', recordId: r.id, oldValue: { approvalStatus: 'PENDING', status: r.status }, newValue: { approvalStatus: 'REJECTED', status: 'ABSENT', reason } }, tx);
+    }
+  });
+  await notifyEmployees(auth.organisationId, rows, (r) => ({
+    title: 'Check-in rejected',
+    message: `Your check-in for ${formatDateOnly(r.date)} was not approved and is marked absent. Reason: ${reason}`,
+  }));
+  return { rejected: rows.length };
+}
+
+async function notifyEmployees<T extends { employeeId: string }>(organisationId: string, rows: T[], build: (r: T) => { title: string; message: string }) {
+  for (const r of rows) {
+    const userId = await userIdForEmployee(r.employeeId);
+    if (userId) await notify([userId], { organisationId, type: 'ATTENDANCE_APPROVAL', link: '/app/me/attendance', ...build(r) });
+  }
 }
 
 /** One employee's month, with every day filled in (records, holidays, weekends). */

@@ -7,7 +7,7 @@ import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from 'react
 import { cn } from '@/lib/utils';
 import { Button } from './button';
 
-const overlay = 'fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-[1px]';
+const overlay = 'fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-[2px] animate-fade-in';
 
 interface DialogProps {
   open: boolean;
@@ -27,7 +27,7 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className={overlay} />
         <DialogPrimitive.Content
-          className={cn('fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-border bg-surface shadow-2xl focus:outline-none', widths[size])}
+          className={cn('fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl border border-border bg-surface shadow-pop focus:outline-none', widths[size])}
           aria-describedby={description ? undefined : undefined}
         >
           <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
@@ -56,7 +56,7 @@ export function Drawer({ open, onOpenChange, title, description, children, foote
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className={overlay} />
-        <DialogPrimitive.Content className={cn('fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-border bg-surface shadow-2xl focus:outline-none', widths[size])}>
+        <DialogPrimitive.Content className={cn('fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-border bg-surface shadow-pop focus:outline-none', widths[size])}>
           <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
             <div>
               <DialogPrimitive.Title className="text-base font-semibold text-fg">{title}</DialogPrimitive.Title>
@@ -94,7 +94,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
     <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialogPrimitive.Portal>
         <AlertDialogPrimitive.Overlay className={overlay} />
-        <AlertDialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-surface p-5 shadow-2xl focus:outline-none">
+        <AlertDialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-6 shadow-pop focus:outline-none">
           <AlertDialogPrimitive.Title className="text-base font-semibold text-fg">{title}</AlertDialogPrimitive.Title>
           <AlertDialogPrimitive.Description asChild>
             <div className="mt-2 text-sm text-muted">{description}</div>
@@ -130,7 +130,7 @@ export const DropdownTrigger = DropdownPrimitive.Trigger;
 
 export const DropdownContent = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<typeof DropdownPrimitive.Content>>(({ className, sideOffset = 6, align = 'end', ...props }, ref) => (
   <DropdownPrimitive.Portal>
-    <DropdownPrimitive.Content ref={ref} sideOffset={sideOffset} align={align} className={cn('z-50 min-w-44 overflow-hidden rounded-lg border border-border bg-surface p-1 text-sm shadow-lg', className)} {...props} />
+    <DropdownPrimitive.Content ref={ref} sideOffset={sideOffset} align={align} className={cn('z-50 min-w-44 overflow-hidden rounded-xl border border-border bg-surface p-1.5 text-sm shadow-pop', className)} {...props} />
   </DropdownPrimitive.Portal>
 ));
 DropdownContent.displayName = 'DropdownContent';
@@ -139,7 +139,7 @@ export const DropdownItem = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<
   <DropdownPrimitive.Item
     ref={ref}
     className={cn(
-      'flex cursor-pointer select-none items-center gap-2 rounded-md px-2.5 py-1.5 text-fg outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-surface-2 data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:text-subtle',
+      'flex cursor-pointer select-none items-center gap-2 rounded-lg px-2.5 py-1.5 text-fg outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-surface-2 data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:text-subtle',
       danger && 'text-rose-600 dark:text-rose-400 [&_svg]:text-rose-500',
       className,
     )}
