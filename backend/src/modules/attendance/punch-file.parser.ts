@@ -139,7 +139,7 @@ async function readRows(buffer: Buffer, filename: string): Promise<string[][]> {
     });
     return rows;
   }
-  const text = buffer.toString('utf8').replace(/^﻿/, '');
+  const text = buffer.toString('utf8').replace(/^\uFEFF/, '');
   const firstLine = text.split(/\r?\n/, 1)[0] ?? '';
   const delimiter = firstLine.includes('\t') ? '\t' : firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',';
   return parse(text, { delimiter, relax_column_count: true, relax_quotes: true, skip_empty_lines: true, trim: true }) as string[][];
