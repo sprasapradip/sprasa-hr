@@ -1,0 +1,34 @@
+TITLE
+Sprasa HR – Full Product Demo | HR & Payroll Software for Nepali Organisations
+
+DESCRIPTION
+Sprasa HR keeps employee records, attendance, leave, payroll and reports in one place — built for Nepali organisations (NPR, Asia/Kathmandu time, Shrawan fiscal year, SSF / PF / CIT).
+
+In this demo:
+✔ HR dashboard – today's attendance, leave and payroll at a glance
+✔ People – employee profiles with PAN, SSF and documents, plus an organisation chart
+✔ Attendance – employees check in from the browser, HR approves each check-in
+✔ Leave – apply online, balance checked instantly, manager and HR approval, team leave calendar
+✔ Payroll – monthly runs (Draft → Reviewed → Approved → Paid), tax, SSF and PF worked out, PDF payslips
+✔ Reports – 21 reports, export to Excel or PDF
+
+Chapters
+0:00 Intro & HR dashboard
+0:15 People & records
+0:26 Attendance
+0:37 Leave management
+0:51 Payroll & payslips
+1:02 Reports & contact
+
+Book your demo:
+📞 +977 9843944252
+🌐 https://sprasatechnicalsolution.com.np
+✉️ info@sprasatechnicalsolution.com.np
+
+Sprasa HR is built by Sprasa Technical Solution — Your Trusted Tech Partner.
+Web Development · Software Solutions · WordPress Development · Graphics Designing · IT Consulting · Mobile Apps
+
+Note: the people and figures shown in this video are demo data.
+
+TAGS
+Sprasa HR, HR software Nepal, payroll software Nepal, HRMS Nepal, attendance software, leave management, payslip software, SSF Nepal, Sprasa Technical Solution

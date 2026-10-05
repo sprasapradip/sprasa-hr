@@ -1,0 +1,431 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Sprasa HR video engine</title>
+<style>
+  @font-face { font-family: 'Montserrat'; src: url('/assets/fonts/Montserrat.ttf') format('truetype'); font-weight: 100 900; font-display: block; }
+  @font-face { font-family: 'Jost'; src: url('/assets/fonts/Jost.ttf') format('truetype'); font-weight: 100 900; font-display: block; }
+  :root {
+    --ink: #000C24; --night: #00173D; --navy: #001F52; --blue: #15489D; --blue6: #1D57B8; --blue5: #2F6BD0; --blue4: #5A8BDD; --blue3: #8FB0E6; --blue2: #C3D4F0;
+    --violet: #7B3FC4; --violet3: #C4B5FD; --teal: #22A39A;
+    --grad: linear-gradient(120deg, #5A8BDD 0%, #8FB0E6 45%, #C4B5FD 100%);
+    --head: 'Montserrat', system-ui, sans-serif; --sub: 'Jost', 'Montserrat', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body { font-family: var(--sub); color: #fff; background: var(--ink); position: relative; -webkit-font-smoothing: antialiased; }
+  .abs { position: absolute; }
+  g, .g { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; font-style: normal; }
+
+  /* ---------- background ---------- */
+  #bg { position: absolute; inset: 0; overflow: hidden;
+    background: radial-gradient(1400px 900px at 50% 120%, #06337B 0%, transparent 60%), linear-gradient(160deg, #000C24 0%, #00173D 55%, #000C24 100%); }
+  .blob { position: absolute; border-radius: 50%; filter: blur(90px); }
+  #b1 { width: 820px; height: 820px; background: #1D57B8; opacity: .55; }
+  #b2 { width: 700px; height: 700px; background: #6B3FB8; opacity: .38; }
+  #b3 { width: 560px; height: 560px; background: #1C8F98; opacity: .22; }
+  #grid { position: absolute; inset: -200px; opacity: .09;
+    background-image: linear-gradient(rgba(143,176,230,.7) 1px, transparent 1px), linear-gradient(90deg, rgba(143,176,230,.7) 1px, transparent 1px);
+    background-size: 72px 72px; -webkit-mask-image: radial-gradient(ellipse at center, #000 20%, transparent 70%); }
+  #beam { position: absolute; width: 520px; height: 2400px; top: -700px; background: linear-gradient(90deg, transparent, rgba(143,176,230,.10), transparent); transform: rotate(24deg); }
+  #dots { position: absolute; inset: 0; }
+  .dot { position: absolute; border-radius: 50%; background: #C3D4F0; }
+  #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,6,20,.65) 100%); pointer-events: none; }
+
+  /* ---------- STS corner logo ---------- */
+  #corner { position: absolute; right: 64px; top: 50px; z-index: 30; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  #corner img { height: 58px; }
+  #corner span { font: 500 13px var(--sub); letter-spacing: .32em; text-transform: uppercase; color: var(--blue3); }
+
+  /* ---------- intro ---------- */
+  #intro { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .logo-card { position: relative; width: 290px; height: 290px; border-radius: 48px; overflow: hidden; background: #f2f2f2;
+    box-shadow: 0 50px 100px -20px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.25); }
+  .logo-card img { width: 100%; height: 100%; object-fit: cover; }
+  .logo-card .shine { position: absolute; top: -50%; left: -60%; width: 40%; height: 200%; transform: rotate(20deg);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent); }
+  #ring { position: absolute; width: 420px; height: 420px; border-radius: 50%; filter: blur(30px);
+    background: conic-gradient(from 0deg, #2F6BD0, #22A39A, #7B3FC4, #2F6BD0); opacity: .75; }
+  #introCardWrap { position: relative; display: grid; place-items: center; width: 420px; height: 420px; margin-bottom: -20px; }
+  #iEyebrow { font: 600 20px var(--sub); letter-spacing: .42em; text-transform: uppercase; color: var(--blue3); margin-top: 20px; }
+  #iTitle { font: 800 84px/1.04 var(--head); letter-spacing: -2.5px; text-align: center; margin-top: 18px; }
+  #iSub { font: 400 28px var(--sub); color: var(--blue2); margin-top: 22px; letter-spacing: .3px; }
+
+  /* ---------- browser window ---------- */
+  #winWrap { position: absolute; left: 140px; top: 40px; width: 1640px; height: 890px; z-index: 5; }
+  #winGlow { position: absolute; inset: -2px; border-radius: 20px; background: linear-gradient(130deg, #5A8BDD, #22A39A 40%, #7B3FC4); filter: blur(28px); opacity: .45; }
+  #win { position: absolute; inset: 0; border-radius: 18px; overflow: hidden; background: #fff; display: flex; flex-direction: column;
+    box-shadow: 0 60px 140px -30px rgba(0,0,0,.8); }
+  #win::after { content: ''; position: absolute; inset: 0; border-radius: 18px; padding: 1.5px; pointer-events: none;
+    background: linear-gradient(130deg, rgba(143,176,230,.9), rgba(196,181,253,.5) 50%, rgba(143,176,230,.2));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+  .tabs { height: 44px; flex: none; background: #0B1736; display: flex; align-items: flex-end; padding: 0 12px; gap: 8px; }
+  .dots3 { display: flex; gap: 8px; align-self: center; margin-right: 14px; }
+  .dots3 i { width: 13px; height: 13px; border-radius: 50%; display: block; }
+  .dots3 i:nth-child(1) { background: #ff5f57; } .dots3 i:nth-child(2) { background: #febc2e; } .dots3 i:nth-child(3) { background: #28c840; }
+  .tab { height: 36px; width: 280px; background: #15244D; border-radius: 10px 10px 0 0; display: flex; align-items: center; gap: 10px; padding: 0 14px; font: 500 14px var(--sub); color: #DFE8F7; }
+  .tab img, .tab svg { width: 18px; height: 18px; border-radius: 4px; flex: none; }
+  .tab .x { margin-left: auto; color: #8FB0E6; font-size: 16px; }
+  .tab.new { width: auto; background: transparent; color: #8FB0E6; font-size: 22px; padding: 0 10px; }
+  .bar { height: 50px; flex: none; background: #15244D; display: flex; align-items: center; gap: 14px; padding: 0 16px; }
+  .nav { display: flex; gap: 16px; color: #8FB0E6; }
+  .nav svg { width: 18px; height: 18px; }
+  .omni { flex: 1; height: 34px; background: #0B1736; border-radius: 17px; display: flex; align-items: center; gap: 10px; padding: 0 16px; font: 400 15px var(--sub); color: #EFF4FB; letter-spacing: .2px; }
+  .omni svg { width: 15px; height: 15px; color: #5A8BDD; }
+  .omni.focus { box-shadow: 0 0 0 2px #5A8BDD; }
+  .omni .muted { color: #8FB0E6; }
+  .caret { display: inline-block; width: 1.5px; height: 18px; background: #8FB0E6; vertical-align: -3px; margin-left: 1px; }
+  .view { position: relative; width: 1640px; height: 796px; overflow: hidden; background: #fff; }
+  #newtab { position: absolute; inset: 0; background: #F7F9FC; display: flex; flex-direction: column; align-items: center; padding-top: 240px; gap: 44px; }
+  #newtab .search { width: 640px; height: 54px; border-radius: 27px; background: #fff; border: 1px solid #DFE8F7; box-shadow: 0 2px 10px rgba(0,31,82,.10); display: flex; align-items: center; gap: 14px; padding: 0 22px; color: #8FB0E6; font: 400 17px var(--sub); }
+  #newtab .search svg { width: 20px; height: 20px; }
+  #newtab .tiles { display: flex; gap: 34px; }
+  #newtab .tile { width: 88px; display: flex; flex-direction: column; align-items: center; gap: 10px; font: 400 13px var(--sub); color: #00173D; }
+  #newtab .tile i { width: 52px; height: 52px; border-radius: 50%; background: #DFE8F7; display: grid; place-items: center; font: 600 18px var(--head); color: #15489D; font-style: normal; }
+  #zoom { position: absolute; inset: 0; transform-origin: 0 0; }
+  #zoom img { position: absolute; left: 0; top: 0; width: 1640px; height: 796px; }
+  #loadbar { position: absolute; left: 0; top: 0; height: 3px; z-index: 4; background: linear-gradient(90deg, #5A8BDD, #C4B5FD); }
+  #hls, #ripples { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+  .hl { position: absolute; border-radius: 12px; border: 3px solid #5A8BDD; box-shadow: 0 0 0 6px rgba(90,139,221,.25), 0 0 30px rgba(123,63,196,.45); }
+  .ripple { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 3px solid #5A8BDD; box-shadow: 0 0 12px #7B3FC4; }
+  #cursor { position: absolute; width: 32px; height: 32px; z-index: 9; filter: drop-shadow(0 4px 8px rgba(0,0,0,.35)); transform-origin: 4px 3px; }
+
+  /* ---------- caption ---------- */
+  #caption { position: absolute; left: 960px; top: 1005px; z-index: 20; display: flex; align-items: center; gap: 16px; padding: 12px 32px 12px 12px; border-radius: 999px; white-space: nowrap;
+    background: rgba(6, 22, 60, .86); box-shadow: 0 24px 60px rgba(0,0,0,.5), inset 0 0 0 1px rgba(143,176,230,.35); }
+  #caption .step { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #2F6BD0, #7B3FC4); display: grid; place-items: center; font: 700 19px var(--head); }
+  #caption .txt { font: 600 29px var(--sub); letter-spacing: .1px; }
+  #caption .txt b { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 600; }
+
+  /* ---------- chapter card ---------- */
+  #chapter { position: absolute; inset: 0; z-index: 15; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #chNum { font: 800 150px/1 var(--head); color: transparent; -webkit-text-stroke: 2px rgba(143,176,230,.55); letter-spacing: -4px; }
+  #chTitle { font: 800 88px/1.05 var(--head); letter-spacing: -2px; margin-top: 6px; }
+  #chSub { font: 400 30px var(--sub); color: var(--blue2); margin-top: 22px; }
+  #chBar { width: 120px; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #2F6BD0, #7B3FC4); margin-top: 34px; transform-origin: left; }
+
+  /* ---------- outro ---------- */
+  #outro { position: absolute; inset: 0; z-index: 12; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 38px; }
+  #oHead { font: 800 76px/1.08 var(--head); letter-spacing: -2px; text-align: center; }
+  #oChips { display: flex; gap: 18px; }
+  .chip { display: flex; align-items: center; gap: 14px; padding: 16px 26px; border-radius: 18px; background: rgba(21,72,157,.28);
+    box-shadow: inset 0 0 0 1px rgba(143,176,230,.3), 0 20px 40px -20px rgba(0,0,0,.5); font: 500 25px var(--sub); }
+  .chip svg { width: 28px; height: 28px; color: var(--blue3); }
+  #oLock { display: flex; align-items: center; gap: 26px; }
+  #oLock .logo-card { width: 120px; height: 120px; border-radius: 26px; }
+  #oLock .n { font: 800 50px/1 var(--head); letter-spacing: -1px; }
+  #oLock .d { font: 500 20px var(--sub); color: var(--blue3); margin-top: 8px; letter-spacing: .26em; text-transform: uppercase; }
+  #oCta { display: flex; align-items: center; gap: 22px; }
+  .cta { padding: 22px 44px; border-radius: 999px; font: 700 28px var(--head); color: #001F52; background: linear-gradient(135deg, #FFFFFF, #C3D4F0); }
+  .phone { display: flex; align-items: center; gap: 12px; font: 600 28px var(--sub); color: #EFF4FB; padding: 20px 30px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px rgba(143,176,230,.5); }
+  .phone svg { width: 26px; height: 26px; color: var(--blue3); }
+
+  /* ---------- STS card ---------- */
+  #sts { position: absolute; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center; }
+  #stsInner { width: 1560px; display: grid; grid-template-columns: 1fr 330px; gap: 90px; align-items: center; }
+  #stsEyebrow { font: 600 19px var(--sub); letter-spacing: .4em; text-transform: uppercase; color: var(--blue3); }
+  #stsLogoWrap { margin-top: 26px; overflow: hidden; }
+  #stsLogo { width: 820px; display: block; }
+  #stsTag { font: 500 34px var(--sub); color: var(--blue2); margin-top: 20px; letter-spacing: .5px; }
+  #stsServices { display: grid; grid-template-columns: repeat(3, 1fr); width: 1010px; gap: 14px 16px; margin-top: 42px; }
+  .svc { display: flex; align-items: center; gap: 12px; padding: 13px 22px 13px 14px; border-radius: 14px; font: 500 22px var(--sub);
+    background: rgba(21,72,157,.25); box-shadow: inset 0 0 0 1px rgba(143,176,230,.28); }
+  .svc i { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #2F6BD0, #15489D); }
+  .svc i svg { width: 18px; height: 18px; color: #fff; }
+  #stsContact { display: flex; gap: 38px; white-space: nowrap; margin-top: 44px; font: 500 25px var(--sub); color: #EFF4FB; }
+  #stsContact div { display: flex; align-items: center; gap: 12px; }
+  #stsContact svg { width: 26px; height: 26px; color: var(--blue3); }
+  #qr { background: #fff; border-radius: 28px; padding: 26px; box-shadow: 0 40px 80px -20px rgba(0,0,0,.6); text-align: center; }
+  #qr img { width: 278px; height: 278px; display: block; }
+  #qr div { font: 600 18px var(--sub); color: #001F52; margin-top: 14px; letter-spacing: .2em; text-transform: uppercase; }
+  #fade { position: absolute; inset: 0; z-index: 40; background: #000C24; pointer-events: none; }
+</style>
+</head>
+<body>
+  <div id="bg"><div class="blob" id="b1"></div><div class="blob" id="b2"></div><div class="blob" id="b3"></div><div id="grid"></div><div id="beam"></div><div id="dots"></div><div id="vignette"></div></div>
+
+  <div id="corner"><span>A product of</span><img src="/assets/sts-logo-white.png" alt=""></div>
+
+  <div id="intro">
+    <div id="introCardWrap"><div id="ring"></div><div class="logo-card" id="iCard"><img src="/assets/hr-logo.jpg" alt=""><div class="shine" id="iShine"></div></div></div>
+    <div id="iEyebrow"></div>
+    <div id="iTitle"></div>
+    <div id="iSub"></div>
+  </div>
+
+  <div id="winWrap"><div id="winGlow"></div><div id="win">
+    <div class="tabs">
+      <div class="dots3"><i></i><i></i><i></i></div>
+      <div class="tab"><svg id="globe" viewBox="0 0 24 24" fill="none" stroke="#8FB0E6" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg><img id="fav" src="/assets/hr-logo.jpg" alt=""><span id="tabtitle">New Tab</span><span class="x">×</span></div>
+      <div class="tab new">+</div>
+    </div>
+    <div class="bar">
+      <div class="nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity=".4"><path d="M9 18l6-6-6-6"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>
+      </div>
+      <div class="omni" id="omni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span id="url"></span></div>
+    </div>
+    <div class="view">
+      <div id="newtab"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Search or type a URL</div>
+        <div class="tiles"><div class="tile"><i>M</i>Mail</div><div class="tile"><i>C</i>Calendar</div><div class="tile"><i>D</i>Drive</div><div class="tile"><i>N</i>News</div><div class="tile"><i>+</i>Add shortcut</div></div></div>
+      <div id="loadbar"></div>
+      <div id="zoom"><img id="imgA" alt=""><img id="imgB" alt=""></div>
+      <div id="hls"></div>
+      <div id="ripples"></div>
+      <svg id="cursor" viewBox="0 0 24 24"><path d="M4 2.5l15.5 9.2-6.8 1.5 3.9 7.3-2.9 1.5-3.9-7.3L4.9 19z" fill="#0B1736" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    </div>
+  </div></div>
+
+  <div id="chapter"><div id="chNum"></div><div id="chTitle"></div><div id="chSub"></div><div id="chBar"></div></div>
+
+  <div id="caption"><div class="step" id="capstep">1</div><div class="txt" id="captxt"></div></div>
+
+  <div id="outro">
+    <div id="oHead"></div>
+    <div id="oChips"></div>
+    <div id="oLock"><div class="logo-card"><img src="/assets/hr-logo.jpg" alt=""></div><div><div class="n">Sprasa HR</div><div class="d">HR Management Software</div></div></div>
+    <div id="oCta"><div class="cta">Book your free demo</div><div class="phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>+977 9843944252</div></div>
+  </div>
+
+  <div id="sts"><div id="stsInner">
+    <div>
+      <div id="stsEyebrow">Sprasa HR is built by</div>
+      <div id="stsLogoWrap"><img id="stsLogo" src="/assets/sts-logo-white.png" alt=""></div>
+      <div id="stsTag">Your Trusted Tech Partner</div>
+      <div id="stsServices"></div>
+      <div id="stsContact">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>sprasatechnicalsolution.com.np</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>+977 9843944252</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>info@sprasatechnicalsolution.com.np</div>
+      </div>
+    </div>
+    <div id="qr"><img src="/assets/qr-website.svg" alt=""><div>Scan to visit</div></div>
+  </div></div>
+
+  <div id="fade"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, p) => a + (b - a) * p;
+const easeOut = (p) => 1 - Math.pow(1 - clamp(p), 3);
+const easeOut5 = (p) => 1 - Math.pow(1 - clamp(p), 5);
+const easeInOut = (p) => { p = clamp(p); return p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; };
+const backOut = (p) => { p = clamp(p); const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); };
+const prog = (t, s, d) => clamp((t - s) / d);
+// visibility envelope: fades in at a, out at b
+const env = (t, a, b, fi = .5, fo = .5) => Math.min(easeOut(prog(t, a, fi)), 1 - easeInOut(prog(t, b - fo, fo)));
+const ICON = {
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  plane: '<path d="M2 16l20-8-8 14-2-6z"/>',
+  wallet: '<rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+  shield: '<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/>',
+  check: '<path d="M20 6L9 17l-5-5"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>',
+  code: '<path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>',
+  wp: '<circle cx="12" cy="12" r="10"/><path d="M6 8l3.5 9L12 10l2.5 7L18 8"/>',
+  pen: '<path d="M12 19l7-7 3 3-7 7z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18z"/>',
+  monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  phone: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/>',
+};
+const svg = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
+
+let V, IM = {};
+window.setup = async (video) => {
+  V = video;
+  $('iEyebrow').innerHTML = V.intro.eyebrow; $('iTitle').innerHTML = V.intro.title; $('iSub').innerHTML = V.intro.sub || '';
+  $('oHead').innerHTML = V.outro.head;
+  $('oChips').innerHTML = V.outro.chips.map(([k, l]) => `<div class="chip">${svg(k)}${l}</div>`).join('');
+  $('stsServices').innerHTML = [['globe', 'Web Development'], ['code', 'Software Solutions'], ['wp', 'WordPress Development'], ['pen', 'Graphics Designing'], ['monitor', 'IT Consulting'], ['phone', 'Mobile Apps']]
+    .map(([k, l]) => `<div class="svc"><i>${svg(k)}</i>${l}</div>`).join('');
+  // deterministic particles
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  window.P = Array.from({ length: 70 }, () => ({ x: rnd() * 1920, y: rnd() * 1080, r: .8 + rnd() * 2.2, s: 8 + rnd() * 26, o: .15 + rnd() * .5, p: rnd() * 6.28 }));
+  $('dots').innerHTML = window.P.map(() => '<div class="dot"></div>').join('');
+  const names = [...new Set(V.shots.map((s) => s[1]).filter(Boolean))];
+  await Promise.all(names.map((n) => new Promise((res, rej) => { const im = new Image(); im.onload = () => im.decode().then(res, res); im.onerror = () => rej(new Error('missing ' + n)); im.src = `/shots/${n}.png`; IM[n] = im; })));
+  await Promise.all([...document.images].map((im) => im.complete ? im.decode().catch(() => {}) : new Promise((r) => { im.onload = r; im.onerror = r; })));
+  await document.fonts.load('800 80px Montserrat'); await document.fonts.load('500 30px Jost'); await document.fonts.ready;
+  return names.length;
+};
+
+function zoomAt(t) {
+  let z = { s: 1, ox: 820, oy: 398 };
+  for (const [t0, t1, s0, ox0, oy0, s1, ox1, oy1] of V.zooms) {
+    if (t < t0) break;
+    const p = easeInOut(prog(t, t0, t1 - t0));
+    z = { s: lerp(s0, s1, p), ox: lerp(ox0, ox1, p), oy: lerp(oy0, oy1, p) };
+  }
+  return z;
+}
+const mapPt = (p, z) => ({ x: z.ox + (p.x - z.ox) * z.s, y: z.oy + (p.y - z.oy) * z.s });
+function cursorAt(t) {
+  let pos = V.cursorStart;
+  for (const [t0, t1, x0, y0, x1, y1] of V.moves) {
+    if (t >= t1) { pos = { x: x1, y: y1 }; continue; }
+    if (t > t0) { const p = easeInOut((t - t0) / (t1 - t0)); const arc = Math.min(40, Math.hypot(x1 - x0, y1 - y0) * .08); return { x: lerp(x0, x1, p), y: lerp(y0, y1, p) - Math.sin(p * Math.PI) * arc }; }
+    break;
+  }
+  return pos;
+}
+function setImg(el, n) { if (el._n !== n) { el._n = n; el.src = n ? IM[n].src : ''; el.style.visibility = n ? 'visible' : 'hidden'; } }
+const within = (t, ranges, fi = .4, fo = .4) => ranges.reduce((m, [a, b]) => Math.max(m, env(t, a, b, fi, fo)), 0);
+
+window.render = (t) => {
+  const D = V.duration;
+  // ---- background motion ----
+  $('b1').style.transform = `translate(${-200 + Math.sin(t * .25) * 160}px, ${-260 + Math.cos(t * .2) * 120}px)`;
+  $('b2').style.transform = `translate(${1250 + Math.cos(t * .22) * 170}px, ${520 + Math.sin(t * .27) * 120}px)`;
+  $('b3').style.transform = `translate(${700 + Math.sin(t * .18 + 2) * 260}px, ${700 + Math.cos(t * .21) * 90}px)`;
+  $('grid').style.transform = `translate(${(t * 6) % 72}px, ${(t * 4) % 72}px)`;
+  $('beam').style.left = `${-900 + ((t * 260) % 3800)}px`;
+  const dots = $('dots').children;
+  for (let i = 0; i < P.length; i++) { const d = P[i]; const y = (d.y - t * d.s + 1200) % 1200 - 60; dots[i].style.cssText = `left:${d.x + Math.sin(t * .6 + d.p) * 14}px;top:${y}px;width:${d.r * 2}px;height:${d.r * 2}px;opacity:${d.o * (.6 + .4 * Math.sin(t * 1.4 + d.p))}`; }
+
+  // ---- corner STS logo (intro + outro) ----
+  const cv = within(t, V.corner, .6, .4);
+  $('corner').style.opacity = cv; $('corner').style.transform = `translateY(${lerp(-16, 0, cv)}px)`;
+
+  // ---- intro ----
+  const I = V.intro, it = t - I.t0;
+  const pc = easeOut5(prog(it, 0, 1.1));
+  const out = easeInOut(prog(t, I.t1 - .6, .6));
+  $('intro').style.display = t > I.t1 ? 'none' : 'flex';
+  $('intro').style.opacity = 1 - out;
+  $('intro').style.transform = `scale(${1 + .12 * out})`;
+  $('intro').style.filter = out > 0 ? `blur(${10 * out}px)` : 'none';
+  $('iCard').style.transform = `perspective(900px) rotateX(${lerp(28, 0, pc)}deg) scale(${lerp(.55, 1, pc)})`;
+  $('iCard').style.opacity = clamp(it / .35);
+  $('iCard').style.filter = pc < 1 ? `blur(${lerp(14, 0, easeOut(prog(it, 0, .7)))}px)` : 'none';
+  $('iShine').style.left = `${lerp(-60, 160, easeInOut(prog(it, .9, .9)))}%`;
+  $('ring').style.transform = `rotate(${t * 40}deg) scale(${lerp(.4, 1, pc)})`; $('ring').style.opacity = .75 * clamp(it / .6);
+  [['iEyebrow', .55], ['iTitle', .75], ['iSub', 1.0]].forEach(([id, d]) => { const p = easeOut(prog(it, d, .7)); $(id).style.opacity = p; $(id).style.transform = `translateY(${lerp(30, 0, p)}px)`; $(id).style.letterSpacing = id === 'iEyebrow' ? `${lerp(.9, .42, p)}em` : ''; });
+
+  // ---- window ----
+  const A = V.app;
+  const wi = easeOut5(prog(t, A.t0, 1.0));
+  const wo = easeInOut(prog(t, A.t1, .9));
+  let ch = 0; // chapter push-back
+  for (const [c0, c1] of V.chapters) ch = Math.max(ch, env(t, c0, c1, .55, .55));
+  const push = Math.max(wo, ch);
+  $('winWrap').style.display = t < A.t0 || t > A.t1 + 1 ? 'none' : 'block';
+  $('winWrap').style.opacity = wi * (1 - .55 * push);
+  $('winWrap').style.transform = `perspective(2200px) translateY(${lerp(220, 0, wi) + 40 * push}px) rotateX(${lerp(16, 0, wi)}deg) scale(${lerp(.86, 1, wi) * (1 - .14 * push)})`;
+  $('winWrap').style.filter = push > .001 ? `blur(${10 * push}px) brightness(${1 - .45 * push})` : 'none';
+
+  // address bar
+  const U = V.urlTyping;
+  if (t < U.t0) { $('url').innerHTML = '<span class="muted">Search or type a URL</span>'; $('omni').classList.remove('focus'); }
+  else if (t < U.t1 + .12) { const n = Math.floor(clamp((t - U.t0) / (U.t1 - U.t0)) * U.text.length); $('url').innerHTML = U.text.slice(0, n) + (Math.floor(t * 3) % 2 === 0 || n < U.text.length ? '<span class="caret"></span>' : ''); $('omni').classList.add('focus'); }
+  else { let p = V.urls[0]; for (const u of V.urls) if (t >= u[0]) p = u; $('url').innerHTML = `${U.text}<span class="muted">${p[1]}</span>`; $('omni').classList.remove('focus'); $('tabtitle').textContent = p[2]; }
+  if (t < U.t1 + .12) $('tabtitle').textContent = 'New Tab';
+  const loaded = t >= V.firstShot;
+  $('globe').style.display = loaded ? 'none' : 'block'; $('fav').style.display = loaded ? 'block' : 'none';
+  $('newtab').style.display = t < V.firstShot + .4 ? 'flex' : 'none';
+  const lb = prog(t, U.t1 + .12, .5);
+  $('loadbar').style.width = (lb < .6 ? lerp(0, 72, easeOut(lb / .6)) : lerp(72, 100, (lb - .6) / .4)) + '%';
+  $('loadbar').style.opacity = t < U.t1 + .12 ? 0 : 1 - prog(t, U.t1 + .62, .25);
+
+  // screenshots
+  let cur = 0;
+  for (let i = 0; i < V.shots.length; i++) if (t >= V.shots[i][0]) cur = i;
+  const [st, sn, fade] = V.shots[cur];
+  const prev = cur > 0 ? V.shots[cur - 1][1] : null;
+  const f = fade ? clamp((t - st) / fade) : 1;
+  setImg($('imgA'), f < 1 ? prev : null);
+  setImg($('imgB'), sn);
+  $('imgB').style.opacity = easeOut(f);
+  // slight slide on page change
+  $('imgB').style.transform = fade && f < 1 ? `translateY(${lerp(10, 0, easeOut(f))}px)` : 'none';
+
+  const z = zoomAt(t);
+  $('zoom').style.transform = `translate(${z.ox}px, ${z.oy}px) scale(${z.s}) translate(${-z.ox}px, ${-z.oy}px)`;
+
+  // highlights
+  $('hls').innerHTML = V.highlights.map(([h0, h1, x, y, w, hh]) => {
+    const v = env(t, h0, h1, .3, .3); if (v <= 0) return '';
+    const a = mapPt({ x: x - w / 2 - 6, y: y - hh / 2 - 5 }, z), b = mapPt({ x: x + w / 2 + 6, y: y + hh / 2 + 5 }, z);
+    return `<div class="hl" style="left:${a.x}px;top:${a.y}px;width:${b.x - a.x}px;height:${b.y - a.y}px;opacity:${v * (.8 + .2 * Math.sin(t * 8))}"></div>`;
+  }).join('');
+
+  // cursor
+  const c = mapPt(cursorAt(t), z);
+  const cvis = within(t, V.cursorVis, .25, .25);
+  let press = 1;
+  for (const [tc] of V.clicks) { const d = t - tc; if (d >= 0 && d < .2) press = 1 - .2 * Math.sin((d / .2) * Math.PI); }
+  $('cursor').style.left = c.x - 4 + 'px'; $('cursor').style.top = c.y - 3 + 'px';
+  $('cursor').style.opacity = cvis; $('cursor').style.transform = `scale(${press})`;
+  $('ripples').innerHTML = V.clicks.map(([tc, x, y]) => {
+    const d = t - tc; if (d < 0 || d > .65) return '';
+    const m = mapPt({ x, y }, zoomAt(tc));
+    return `<div class="ripple" style="left:${m.x}px;top:${m.y}px;transform:scale(${lerp(.4, 4.2, easeOut(d / .65))});opacity:${1 - d / .65}"></div>`;
+  }).join('');
+
+  // ---- caption ----
+  let ci = -1;
+  for (let i = 0; i < V.captions.length; i++) if (t >= V.captions[i][0]) ci = i;
+  const cap = $('caption');
+  if (ci < 0 || !V.captions[ci][2]) cap.style.opacity = 0;
+  else {
+    const [ct, step, text] = V.captions[ci], next = V.captions[ci + 1];
+    $('capstep').textContent = step; $('captxt').innerHTML = text;
+    $('capstep').style.display = step ? 'grid' : 'none';
+    const pin = easeOut((t - ct) / .4), pout = next ? easeInOut(clamp((t - (next[0] - .25)) / .25)) : 0;
+    cap.style.opacity = pin * (1 - pout);
+    cap.style.transform = `translate(-50%, -50%) translateY(${lerp(28, 0, pin) + 12 * pout}px) scale(${lerp(.94, 1, pin)})`;
+  }
+
+  // ---- chapter cards ----
+  let chShown = false;
+  for (const [c0, c1, num, title, sub] of V.chapters) {
+    if (t < c0 || t > c1) continue;
+    chShown = true;
+    $('chNum').textContent = num; $('chTitle').innerHTML = title; $('chSub').innerHTML = sub;
+    const v = env(t, c0, c1, .5, .45);
+    [['chNum', .05], ['chTitle', .18], ['chSub', .32]].forEach(([id, d]) => { const p = easeOut(prog(t, c0 + d, .6)); $(id).style.opacity = p * v; $(id).style.transform = `translateY(${lerp(36, 0, p)}px)`; });
+    $('chBar').style.opacity = v; $('chBar').style.transform = `scaleX(${easeOut(prog(t, c0 + .4, .7))})`;
+  }
+  $('chapter').style.display = chShown ? 'flex' : 'none';
+
+  // ---- HR outro ----
+  const O = V.outro, ot = t - O.t0;
+  const oOut = easeInOut(prog(t, V.sts.t0 - .1, .6));
+  $('outro').style.display = ot < 0 || oOut >= 1 ? 'none' : 'flex';
+  $('outro').style.opacity = 1 - oOut; $('outro').style.transform = `scale(${1 - .06 * oOut})`;
+  const sh = (el, d, dur = .8) => { const p = easeOut(prog(ot, d, dur)); el.style.opacity = p; el.style.transform = `translateY(${lerp(40, 0, p)}px)`; };
+  sh($('oHead'), .15);
+  [...$('oChips').children].forEach((el, i) => { const p = backOut(prog(ot, .5 + i * .1, .6)); el.style.opacity = clamp(prog(ot, .5 + i * .1, .3)); el.style.transform = `translateY(${lerp(34, 0, p)}px) scale(${lerp(.85, 1, p)})`; });
+  sh($('oLock'), 1.1);
+  const pcta = backOut(prog(ot, 1.4, .7));
+  $('oCta').style.opacity = clamp(prog(ot, 1.4, .35));
+  const glow = ot > 2.1 ? (Math.sin((ot - 2.1) * Math.PI * 1.3 - Math.PI / 2) + 1) / 2 : 0;
+  $('oCta').style.transform = `translateY(${lerp(30, 0, pcta)}px) scale(${lerp(.85, 1, pcta)})`;
+  $('oCta').firstElementChild.style.boxShadow = `0 20px ${50 + 30 * glow}px rgba(90,139,221,${.35 + .4 * glow})`;
+  $('oCta').firstElementChild.style.transform = `scale(${1 + .03 * glow})`;
+
+  // ---- STS card ----
+  const S = V.sts, stt = t - S.t0;
+  $('sts').style.display = stt < 0 ? 'none' : 'flex';
+  const sp = (id, d, dur = .8) => { const p = easeOut(prog(stt, d, dur)); $(id).style.opacity = p; $(id).style.transform = `translateY(${lerp(30, 0, p)}px)`; };
+  sp('stsEyebrow', .2);
+  const lw = easeInOut(prog(stt, .35, 1.0));
+  $('stsLogo').style.clipPath = `inset(0 ${100 - lw * 100}% 0 0)`;
+  $('stsLogo').style.transform = `translateX(${lerp(-30, 0, lw)}px)`;
+  sp('stsTag', .9);
+  [...$('stsServices').children].forEach((el, i) => { const p = backOut(prog(stt, 1.1 + i * .08, .55)); el.style.opacity = clamp(prog(stt, 1.1 + i * .08, .3)); el.style.transform = `translateY(${lerp(26, 0, p)}px) scale(${lerp(.9, 1, p)})`; });
+  sp('stsContact', 1.7);
+  const pq = backOut(prog(stt, .8, .8));
+  $('qr').style.opacity = clamp(prog(stt, .8, .4)); $('qr').style.transform = `perspective(900px) rotateY(${lerp(-35, 0, pq)}deg) scale(${lerp(.8, 1, pq)})`;
+
+  // fade from/to black at the very ends
+  $('fade').style.opacity = Math.max(1 - prog(t, 0, .45), prog(t, D - .45, .45));
+};
+</script>
+</body>
+</html>
